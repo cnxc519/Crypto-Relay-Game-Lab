@@ -7,23 +7,28 @@ function clampLevelPage(levels, levelMode = levelModeForDataset()) {
 }
 
 function renderLevelModal() {
-  const levelMode = levelModeForDataset();
-  const levels = generateLevelList();
+  const mode = currentLevelSpanMode();
+  const datasetInfo = currentLevelDatasetInfo();
+  const bucketInfo = currentLevelBucketInfo(mode, datasetInfo);
+  const levelMode = levelModeForDataset(bucketInfo);
+  const levels = generateLevelList(mode);
   const records = levelMode.records || {};
   const stats = levelModeStats(levelMode);
   const totalPages = clampLevelPage(levels, levelMode);
   const page = levelMode.page;
   const start = page * LEVELS_PER_PAGE;
   const pageLevels = levels.slice(start, start + LEVELS_PER_PAGE);
+  els.levelModeDailyBtn.classList.toggle("active", mode.id === "daily");
+  els.levelModeWeeklyBtn.classList.toggle("active", mode.id === "weekly");
   els.levelSummary.innerHTML = `
-    <div><span>当前数据</span><strong>${escapeHtml(levelMode.label)}</strong></div>
+    <div><span>当前数据</span><strong>${escapeHtml(datasetInfo.label)}</strong></div>
     <div><span>通过关卡</span><strong>${stats.cleared}/${levels.length}</strong></div>
     <div><span>累计星数</span><strong>${stats.stars}</strong></div>
     <div><span>总挑战</span><strong>${stats.attempts}</strong></div>
     <div><span>最佳收益</span><strong>${(stats.bestReturn * 100).toFixed(2)}%</strong></div>
   `;
   if (!levels.length) {
-    els.levelRows.innerHTML = '<div class="level-row"><div><strong>暂无关卡</strong><span>请导入覆盖 2020 年后的 15m 数据。</span></div></div>';
+    els.levelRows.innerHTML = `<div class="level-row"><div><strong>暂无关卡</strong><span>请导入覆盖 2020 年后的 15m 数据，当前模式为 ${escapeHtml(mode.label)}。</span></div></div>`;
     els.levelPageSelect.innerHTML = '<option value="0">第 1 / 1 页</option>';
     els.prevLevelPageBtn.disabled = true;
     els.nextLevelPageBtn.disabled = true;
@@ -60,8 +65,8 @@ function renderLevelModal() {
 }
 
 function setLevelPage(page) {
-  const levelMode = levelModeForDataset();
-  const levels = generateLevelList();
+  const levelMode = levelModeForDataset(currentLevelBucketInfo());
+  const levels = generateLevelList(currentLevelSpanMode());
   const totalPages = Math.max(1, Math.ceil(levels.length / LEVELS_PER_PAGE));
   levelMode.page = clamp(Number(page) || 0, 0, totalPages - 1);
   levelMode.updatedAt = Date.now();

@@ -56,7 +56,7 @@ const CHALLENGE_TYPES = {
   },
   level: {
     name: "历史闯关",
-    text: "从 2020 年开始，每一天 96 根 15m K 线是一关，目标是稳定拿星。",
+    text: "从 2020 年开始，按当前关卡模式逐段闯关，目标是稳定拿星。",
     context: 96,
     horizon: LEVEL_MODE_CANDLES - 1,
     xp: 100,

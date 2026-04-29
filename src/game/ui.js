@@ -17,6 +17,7 @@ function renderGame() {
   els.streakValue.textContent = `${profile.streak || 0} 天`;
   els.xpFill.style.width = `${xpProgress}%`;
   els.xpText.textContent = `${profile.xp - currentLevelXp} / ${nextLevelXp - currentLevelXp} XP`;
+  els.levelGameBtn.textContent = `历史闯关 · ${currentLevelSpanMode().shortLabel}`;
   renderCharacterPanel();
 
   if (active) {

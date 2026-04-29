@@ -98,7 +98,8 @@ function startChallenge(type = "blind") {
 
 function startLevelChallenge(levelIndex = null) {
   if (!ensureLevelTimeframe()) return;
-  const levels = generateLevelList();
+  const mode = currentLevelSpanMode();
+  const levels = generateLevelList(mode);
   if (!levels.length) {
     showToast("没有生成可用关卡。请确认数据覆盖 2020 年之后且为 15m。");
     return;
@@ -108,6 +109,7 @@ function startLevelChallenge(levelIndex = null) {
   const config = CHALLENGE_TYPES.level;
   const startCandle = state.candles[level.startIndex];
   const dataset = currentLevelDatasetInfo();
+  const bucketInfo = currentLevelBucketInfo(mode, dataset);
 
   stopPlayback();
   if (state.game.active && state.game.externalAccount) {
@@ -126,7 +128,7 @@ function startLevelChallenge(levelIndex = null) {
     id: uniqueId("level"),
     type: "level",
     title: level.title,
-    text: config.text,
+    text: levelChallengeText(mode),
     startIndex: level.startIndex,
     endIndex: level.endIndex,
     startTime: startCandle.time,
@@ -137,8 +139,12 @@ function startLevelChallenge(levelIndex = null) {
     trialKind: "level",
     levelId: level.id,
     levelIndex: level.index,
-    levelDatasetKey: dataset.key,
-    levelDatasetLabel: dataset.label,
+    levelDatasetKey: bucketInfo.key,
+    levelDatasetLabel: bucketInfo.label,
+    levelBaseDatasetKey: dataset.key,
+    levelBaseDatasetLabel: dataset.label,
+    levelSpanModeId: mode.id,
+    levelSpanModeLabel: mode.label,
     startedAt: Date.now(),
     tradesAtStart: 0,
     bookmarksAtStart: 0,
@@ -153,7 +159,7 @@ function startLevelChallenge(levelIndex = null) {
   els.stopLossInput.value = "";
   els.takeProfitInput.value = "";
   revealTo(level.startIndex, true);
-  showToast(`${level.title} 开始：目标 5 星通关。`);
+  showToast(`${level.title} 开始：${mode.label}，目标 5 星通关。`);
 }
 
 function startCharacterTrial(kind = "normal") {

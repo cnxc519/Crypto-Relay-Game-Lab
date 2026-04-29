@@ -209,6 +209,7 @@ function createGameProfile() {
     daily: createDailyProgress(),
     dailyHistory: {},
     levelMode: {
+      currentSpanModeId: "daily",
       records: {},
       datasets: {},
       lastLevelId: "",

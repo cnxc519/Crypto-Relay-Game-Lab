@@ -438,7 +438,13 @@
     <div class="modal-backdrop" id="levelModal">
       <div class="modal wide-modal">
         <div class="panel-title-row">
-          <h2>历史闯关</h2>
+          <div class="level-modal-heading">
+            <h2>历史闯关</h2>
+            <div class="level-mode-switch">
+              <button id="levelModeDailyBtn" type="button" data-level-span="daily">1天一关</button>
+              <button id="levelModeWeeklyBtn" type="button" data-level-span="weekly">7天一关</button>
+            </div>
+          </div>
           <button id="closeLevelModalBtn" type="button">关闭</button>
         </div>
         <div id="levelSummary" class="level-summary"></div>

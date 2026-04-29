@@ -122,6 +122,8 @@ function bindEvents() {
   els.revengeGameBtn.addEventListener("click", () => startChallenge("revenge"));
   els.levelGameBtn.addEventListener("click", () => startLevelChallenge());
   els.levelListBtn.addEventListener("click", openLevelModal);
+  els.levelModeDailyBtn.addEventListener("click", () => setLevelSpanMode("daily"));
+  els.levelModeWeeklyBtn.addEventListener("click", () => setLevelSpanMode("weekly"));
   els.prevLevelPageBtn.addEventListener("click", () => setLevelPage((Number(levelModeForDataset().page) || 0) - 1));
   els.nextLevelPageBtn.addEventListener("click", () => setLevelPage((Number(levelModeForDataset().page) || 0) + 1));
   els.levelPageSelect.addEventListener("change", () => setLevelPage(Number(els.levelPageSelect.value)));

@@ -1235,11 +1235,36 @@ th {
   margin-bottom: 8px;
 }
 
+.level-modal-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .level-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 14px;
+}
+
+.level-mode-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.level-mode-switch button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.level-mode-switch button.active {
+  border-color: var(--gold);
+  color: #101010;
+  background: var(--gold);
 }
 
 .level-summary div,

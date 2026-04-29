@@ -1,5 +1,11 @@
 "use strict";
 
+const LEVEL_SPAN_MODES = Object.freeze({
+  daily: { id: "daily", label: "1天一关", shortLabel: "1天", days: 1 },
+  weekly: { id: "weekly", label: "7天一关", shortLabel: "7天", days: 7 },
+});
+const LEVEL_DAY_MS = 86_400_000;
+
 function cleanDatasetFileName(fileName = state.fileName) {
   return String(fileName || "")
     .replace(/（.*?）/g, "")
@@ -7,6 +13,26 @@ function cleanDatasetFileName(fileName = state.fileName) {
     .split(/[\\/]/)
     .pop()
     .trim();
+}
+
+function levelSpanModeById(modeId = "daily") {
+  return LEVEL_SPAN_MODES[modeId] || LEVEL_SPAN_MODES.daily;
+}
+
+function currentLevelSpanModeId() {
+  return levelSpanModeById(state.game.profile.levelMode?.currentSpanModeId).id;
+}
+
+function currentLevelSpanMode() {
+  return levelSpanModeById(currentLevelSpanModeId());
+}
+
+function setLevelSpanMode(modeId) {
+  const mode = levelSpanModeById(modeId);
+  state.game.profile.levelMode.currentSpanModeId = mode.id;
+  saveGameProfile();
+  renderGame();
+  if (els.levelModal.classList.contains("show")) renderLevelModal();
 }
 
 function currentLevelDatasetInfo() {
@@ -34,6 +60,21 @@ function currentLevelDatasetInfo() {
   };
 }
 
+function levelBucketKey(datasetKey, modeId = currentLevelSpanModeId()) {
+  return `${datasetKey}|span:${modeId}`;
+}
+
+function currentLevelBucketInfo(mode = currentLevelSpanMode(), datasetInfo = currentLevelDatasetInfo()) {
+  return {
+    key: levelBucketKey(datasetInfo.key, mode.id),
+    label: `${datasetInfo.label} · ${mode.label}`,
+    datasetKey: datasetInfo.key,
+    datasetLabel: datasetInfo.label,
+    modeId: mode.id,
+    modeLabel: mode.label,
+  };
+}
+
 function normalizeLevelModeBucket(bucket = {}, key = "", label = "") {
   const records = bucket.records && typeof bucket.records === "object" && !Array.isArray(bucket.records) ? bucket.records : {};
   const page = Number(bucket.page);
@@ -43,6 +84,7 @@ function normalizeLevelModeBucket(bucket = {}, key = "", label = "") {
     records,
     lastLevelId: bucket.lastLevelId || "",
     page: Number.isFinite(page) && page >= 0 ? Math.floor(page) : 0,
+    archivedLegacy: Boolean(bucket.archivedLegacy),
     createdAt: bucket.createdAt || Date.now(),
     updatedAt: bucket.updatedAt || bucket.createdAt || Date.now(),
   };
@@ -52,41 +94,72 @@ function hasLevelRecords(records) {
   return Boolean(records && typeof records === "object" && !Array.isArray(records) && Object.keys(records).length);
 }
 
-function levelModeForDataset(key = currentLevelDatasetInfo().key, label = currentLevelDatasetInfo().label) {
+function levelModeForDataset(
+  keyOrInfo = currentLevelBucketInfo(),
+  label = currentLevelBucketInfo().label,
+  datasetKey = currentLevelBucketInfo().datasetKey,
+  modeId = currentLevelBucketInfo().modeId,
+) {
+  const info =
+    keyOrInfo && typeof keyOrInfo === "object"
+      ? keyOrInfo
+      : { key: keyOrInfo, label, datasetKey, modeId };
+  const bucketKey = info.key;
+  const bucketLabel = info.label || info.key || "未命名数据";
+  const legacyDatasetKey = info.datasetKey || info.key;
+  const spanModeId = info.modeId || currentLevelSpanModeId();
   const levelMode = state.game.profile.levelMode;
   if (!levelMode.datasets || typeof levelMode.datasets !== "object" || Array.isArray(levelMode.datasets)) {
     levelMode.datasets = {};
   }
 
-  if (!levelMode.datasets[key]) {
+  if (!levelMode.datasets[bucketKey]) {
+    const legacyBucket =
+      spanModeId === "daily" && legacyDatasetKey && legacyDatasetKey !== bucketKey ? levelMode.datasets[legacyDatasetKey] : null;
+    const shouldAttachLegacyDatasetBucket = hasLevelRecords(legacyBucket?.records) && !legacyBucket?.archivedLegacy;
     const shouldAttachLegacyRecords =
-      key === "csv:btcusdt-15m" &&
+      spanModeId === "daily" &&
+      bucketKey === levelBucketKey("csv:btcusdt-15m", "daily") &&
       !levelMode.legacyDatasetKey &&
       hasLevelRecords(levelMode.records);
-    levelMode.datasets[key] = normalizeLevelModeBucket(
+    levelMode.datasets[bucketKey] = normalizeLevelModeBucket(
       {
-        key,
-        label,
-        records: shouldAttachLegacyRecords ? { ...levelMode.records } : {},
-        lastLevelId: shouldAttachLegacyRecords ? levelMode.lastLevelId || "" : "",
-        page: shouldAttachLegacyRecords ? levelMode.page || 0 : 0,
+        key: bucketKey,
+        label: bucketLabel,
+        records: shouldAttachLegacyDatasetBucket ? { ...(legacyBucket.records || {}) } : shouldAttachLegacyRecords ? { ...levelMode.records } : {},
+        lastLevelId: shouldAttachLegacyDatasetBucket
+          ? legacyBucket.lastLevelId || ""
+          : shouldAttachLegacyRecords
+            ? levelMode.lastLevelId || ""
+            : "",
+        page: shouldAttachLegacyDatasetBucket ? legacyBucket.page || 0 : shouldAttachLegacyRecords ? levelMode.page || 0 : 0,
       },
-      key,
-      label,
+      bucketKey,
+      bucketLabel,
     );
-    if (shouldAttachLegacyRecords) levelMode.legacyDatasetKey = key;
+    if (shouldAttachLegacyRecords) levelMode.legacyDatasetKey = bucketKey;
+    if (shouldAttachLegacyDatasetBucket) {
+      levelMode.datasets[legacyDatasetKey] = normalizeLevelModeBucket(
+        {
+          ...legacyBucket,
+          archivedLegacy: true,
+        },
+        legacyDatasetKey,
+        legacyBucket.label || legacyDatasetKey,
+      );
+    }
   }
 
-  levelMode.datasets[key] = normalizeLevelModeBucket(levelMode.datasets[key], key, label);
-  levelMode.datasets[key].label = label;
-  return levelMode.datasets[key];
+  levelMode.datasets[bucketKey] = normalizeLevelModeBucket(levelMode.datasets[bucketKey], bucketKey, bucketLabel);
+  levelMode.datasets[bucketKey].label = bucketLabel;
+  return levelMode.datasets[bucketKey];
 }
 
 function levelModeRecordsForStats(profileOrLevelMode = state.game.profile) {
   const levelMode = profileOrLevelMode.levelMode || profileOrLevelMode || {};
   const datasets =
     levelMode.datasets && typeof levelMode.datasets === "object" && !Array.isArray(levelMode.datasets)
-      ? Object.values(levelMode.datasets)
+      ? Object.values(levelMode.datasets).filter((bucket) => !bucket.archivedLegacy)
       : [];
   const legacyRecords = Object.values(levelMode.records || {});
   if (datasets.length) {
@@ -130,21 +203,40 @@ function levelDateKey(time) {
   return new Date(time).toISOString().slice(0, 10);
 }
 
-function generateLevelList() {
+function levelCandlesForMode(mode = currentLevelSpanMode()) {
+  return LEVEL_MODE_CANDLES * mode.days;
+}
+
+function levelWindowLabel(startTime, endTimeExclusive, mode = currentLevelSpanMode()) {
+  const startKey = levelDateKey(startTime);
+  if (mode.days <= 1) return startKey;
+  return `${startKey} ~ ${levelDateKey(endTimeExclusive - 1)}`;
+}
+
+function levelChallengeText(mode = currentLevelSpanMode()) {
+  return mode.id === "weekly"
+    ? "从 2020 年开始，每 7 天是一关，更适合中长线持仓训练，目标是稳定拿星。"
+    : "从 2020 年开始，每 1 天是一关，目标是稳定拿星。";
+}
+
+function generateLevelList(mode = currentLevelSpanMode()) {
   if (!state.candles.length) return [];
   const levels = [];
   const lastTime = state.candles[state.candles.length - 1].time;
-  for (let dayStart = LEVEL_MODE_START_TIME; dayStart + 86_400_000 <= lastTime; dayStart += 86_400_000) {
-    const dayEnd = dayStart + 86_400_000;
+  const spanMs = mode.days * LEVEL_DAY_MS;
+  const candlesPerLevel = levelCandlesForMode(mode);
+  for (let dayStart = LEVEL_MODE_START_TIME; dayStart + spanMs <= lastTime; dayStart += spanMs) {
+    const dayEnd = dayStart + spanMs;
     const startIndex = findIndexAtOrAfter(state.candles, dayStart);
-    const endIndex = startIndex + LEVEL_MODE_CANDLES - 1;
+    const endIndex = startIndex + candlesPerLevel - 1;
     if (!state.candles[startIndex] || !state.candles[endIndex]) continue;
     if (state.candles[startIndex].time >= dayEnd || state.candles[endIndex].time >= dayEnd) continue;
-    const id = levelDateKey(dayStart);
+    const rangeLabel = levelWindowLabel(dayStart, dayEnd, mode);
+    const id = mode.days <= 1 ? levelDateKey(dayStart) : `${levelDateKey(dayStart)}_${levelDateKey(dayEnd - 1)}`;
     levels.push({
       id,
       index: levels.length,
-      title: `${id} 第 ${levels.length + 1} 关`,
+      title: `${rangeLabel} 第 ${levels.length + 1} 关`,
       startIndex,
       endIndex,
       startTime: state.candles[startIndex].time,
@@ -168,7 +260,7 @@ function starsText(stars) {
 }
 
 function nextLevelIndex(levels) {
-  const records = levelModeForDataset().records || {};
+  const records = levelModeForDataset(currentLevelBucketInfo()).records || {};
   const firstUncleared = levels.find((level) => !(records[level.id]?.bestStars > 0));
   if (firstUncleared) return firstUncleared.index;
   const firstNotFive = levels.find((level) => (records[level.id]?.bestStars || 0) < 5);
@@ -177,13 +269,20 @@ function nextLevelIndex(levels) {
 
 function recordLevelResult(result) {
   if (!result.levelId) return null;
-  const levelMode = levelModeForDataset(result.levelDatasetKey, result.levelDatasetLabel);
+  const levelMode = levelModeForDataset({
+    key: result.levelDatasetKey,
+    label: result.levelDatasetLabel,
+    datasetKey: result.levelBaseDatasetKey || result.levelDatasetKey,
+    modeId: result.levelSpanModeId || "daily",
+  });
   const records = levelMode.records;
   const previous = records[result.levelId] || {
     id: result.levelId,
     index: result.levelIndex,
     datasetKey: levelMode.key,
     datasetLabel: levelMode.label,
+    baseDatasetKey: result.levelBaseDatasetKey || result.levelDatasetKey,
+    spanModeId: result.levelSpanModeId || "daily",
     attempts: 0,
     bestStars: 0,
     bestScore: 0,
@@ -200,6 +299,8 @@ function recordLevelResult(result) {
     index: result.levelIndex,
     datasetKey: levelMode.key,
     datasetLabel: levelMode.label,
+    baseDatasetKey: result.levelBaseDatasetKey || result.levelDatasetKey,
+    spanModeId: result.levelSpanModeId || "daily",
     attempts,
     bestStars,
     bestScore,
