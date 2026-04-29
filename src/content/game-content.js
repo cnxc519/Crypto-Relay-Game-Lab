@@ -63,7 +63,7 @@ const CHALLENGE_TYPES = {
   },
 };
 
-const ACHIEVEMENTS = [
+const LEGACY_ACHIEVEMENTS = [
   { id: "first_run", name: "第一局开打", desc: "完成 1 个训练关卡", test: (p) => p.stats.completed >= 1 },
   { id: "three_runs", name: "开始上瘾", desc: "累计完成 3 局", test: (p) => p.stats.completed >= 3 },
   { id: "ten_runs", name: "历史回放常客", desc: "累计完成 10 局", test: (p) => p.stats.completed >= 10 },
@@ -231,7 +231,6 @@ const CHARACTER_CONFIG = [
   window.BtcReplay.content = {
     LEVEL_TITLES,
     CHALLENGE_TYPES,
-    ACHIEVEMENTS,
     CHARACTER_CONFIG,
   };
 })();

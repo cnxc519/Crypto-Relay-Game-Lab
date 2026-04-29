@@ -73,6 +73,8 @@ function bindEvents() {
   });
 
   els.resetAccountBtn.addEventListener("click", () => resetAccount(true));
+  els.addStopBtn.addEventListener("click", () => addRiskLine("stop"));
+  els.addTakeBtn.addEventListener("click", () => addRiskLine("take"));
   els.riskBuyBtn.addEventListener("click", executeRiskBuy);
   els.closePositionBtn.addEventListener("click", () => closePosition());
   els.attachStopsBtn.addEventListener("click", setStopsFromInputs);
@@ -153,6 +155,7 @@ function bindEvents() {
   els.closeSettlementBtn.addEventListener("click", closeSettlement);
   els.achievementAllBtn.addEventListener("click", openAchievementModal);
   els.closeAchievementBtn.addEventListener("click", closeAchievementModal);
+  els.achievementAllList.addEventListener("click", handleAchievementListClick);
   els.nextChallengeBtn.addEventListener("click", () => {
     closeSettlement();
     startChallenge(state.game.lastType || "blind");
@@ -196,6 +199,13 @@ function bindEvents() {
     const distance = Math.hypot(point.x - state.drag.x, point.y - state.drag.y);
     if (distance > 4) state.drag.moved = true;
 
+    if (state.drag.mode === "risk-line") {
+      setRiskLine(state.drag.kind, priceFromChartY(point.y, metrics), { silent: true, renderMode: "none" });
+      state.hover = point;
+      renderChart();
+      return;
+    }
+
     if (state.drag.mode === "scrub") {
       const delta = Math.round((point.x - state.drag.x) / scrubPixelsPerCandle(event));
       const target = clamp(state.drag.index + delta, 0, state.candles.length - 1);
@@ -223,8 +233,9 @@ function bindEvents() {
     if (state.drag) return;
     const point = canvasPoint(event);
     const metrics = chartMetrics();
+    const riskLine = pickRiskLineAtPoint(point, metrics);
     state.hover = point;
-    els.canvas.style.cursor = isNearCurrentLine(point, metrics) ? "ew-resize" : "crosshair";
+    els.canvas.style.cursor = riskLine ? "ns-resize" : isNearCurrentLine(point, metrics) ? "ew-resize" : "crosshair";
     renderChart();
   });
   window.addEventListener("mousemove", (event) => {
@@ -241,6 +252,18 @@ function bindEvents() {
     const point = canvasPoint(event);
     const metrics = chartMetrics();
     stopPlayback();
+    const riskLine = pickRiskLineAtPoint(point, metrics);
+    if (riskLine) {
+      state.drag = {
+        mode: "risk-line",
+        kind: riskLine.kind,
+        x: point.x,
+        y: point.y,
+        moved: false,
+      };
+      els.canvas.style.cursor = "ns-resize";
+      return;
+    }
     if (isNearCurrentLine(point, metrics)) {
       state.drag = {
         mode: "scrub",
@@ -262,7 +285,8 @@ function bindEvents() {
     };
   });
   window.addEventListener("mouseup", (event) => {
-    if (state.drag?.mode === "pending" && !state.drag.moved) {
+    const finishedDrag = state.drag;
+    if (finishedDrag?.mode === "pending" && !finishedDrag.moved) {
       const point = canvasPoint(event);
       const metrics = chartMetrics();
       if (pointInChart(point, metrics)) {
@@ -271,8 +295,13 @@ function bindEvents() {
         state.lastClickAt = Date.now();
       }
     }
+    if (finishedDrag?.mode === "risk-line" && finishedDrag.moved) {
+      const price = riskLineValue(finishedDrag.kind);
+      if (price != null) showToast(`已调整${riskLineLabel(finishedDrag.kind)}：$${priceFmt.format(price)}`);
+    }
     state.drag = null;
     els.canvas.style.cursor = "crosshair";
+    if (finishedDrag) renderChart();
   });
   els.canvas.addEventListener(
     "wheel",

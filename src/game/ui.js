@@ -50,16 +50,14 @@ function renderGame() {
   renderDailyReward();
   renderDailyCalendar();
 
-  const unlocked = profile.achievements
-    .slice()
-    .reverse()
+  const unlocked = (profile.recentAchievements?.length ? profile.recentAchievements : profile.achievements.slice().reverse())
     .slice(0, 5)
     .map((id) => ACHIEVEMENTS.find((item) => item.id === id))
     .filter(Boolean);
   els.achievementList.innerHTML =
     unlocked.map((item) => `<div class="achievement-item unlocked"><strong>${escapeHtml(item.name)}</strong><br>${escapeHtml(item.desc)}</div>`).join("") ||
     '<div class="achievement-item">还没有成就。打一局，第一枚徽章就会亮。</div>';
-  renderAchievementModal();
+  if (els.achievementModal.classList.contains("show")) renderAchievementModal();
   renderHudBadges();
 }
 
@@ -135,7 +133,7 @@ function settlementReviewMessages(settlement, character) {
         .map((trade, index) => {
           const risk = [trade.stopPrice ? `SL ${trade.stopPrice}` : "", trade.takePrice ? `TP ${trade.takePrice}` : ""].filter(Boolean).join(" / ");
           const result = [trade.realizedPnl ? `PnL ${trade.realizedPnl}` : "", trade.r ? `${trade.r}R` : ""].filter(Boolean).join(" / ");
-          const note = [trade.reason, ...(trade.tags || [])].filter(Boolean).join(" / ");
+          const note = tradeNoteSummary(trade);
           return `${index + 1}. ${trade.time} ${trade.side} @ ${trade.price} qty ${trade.qty}${risk ? ` (${risk})` : ""}${result ? ` -> ${result}` : ""}${trade.auto ? " [自动]" : ""}${note ? `；备注：${note}` : ""}`;
         })
         .join("\n")

@@ -88,9 +88,8 @@ function startChallenge(type = "blind") {
   state.blindMode = true;
   state.dateRevealed = false;
   els.sessionNameInput.value = config.name;
-  els.sessionNotesInput.value = "";
+  clearTradeDraftInputs();
   els.bookmarkInput.value = "";
-  els.tradeReasonInput.value = "";
   els.stopLossInput.value = "";
   els.takeProfitInput.value = "";
   revealTo(startIndex, true);
@@ -149,9 +148,8 @@ function startLevelChallenge(levelIndex = null) {
   state.blindMode = false;
   state.dateRevealed = true;
   els.sessionNameInput.value = level.title;
-  els.sessionNotesInput.value = "";
+  clearTradeDraftInputs();
   els.bookmarkInput.value = "";
-  els.tradeReasonInput.value = "";
   els.stopLossInput.value = "";
   els.takeProfitInput.value = "";
   revealTo(level.startIndex, true);
@@ -211,6 +209,7 @@ function settlementTradesForReport(trades) {
     price: Number(trade.price).toFixed(2),
     qty: Number(trade.qty).toFixed(8),
     reason: trade.reason || "",
+    review: trade.review || "",
     tags: trade.tags || [],
     stopPrice: trade.stopPrice ? Number(trade.stopPrice).toFixed(2) : "",
     takePrice: trade.takePrice ? Number(trade.takePrice).toFixed(2) : "",
@@ -218,6 +217,71 @@ function settlementTradesForReport(trades) {
     r: Number.isFinite(trade.r) ? Number(trade.r).toFixed(2) : "",
     auto: Boolean(trade.auto),
   }));
+}
+
+function challengePriceExtremes(startIndex, endIndex) {
+  let low = Infinity;
+  let high = -Infinity;
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    const candle = state.candles[index];
+    if (!candle) continue;
+    low = Math.min(low, candle.low);
+    high = Math.max(high, candle.high);
+  }
+  return {
+    low: Number.isFinite(low) ? low : null,
+    high: Number.isFinite(high) ? high : null,
+  };
+}
+
+function entryFractionForTrade(trade) {
+  const equity = Math.max(0.000001, Number(trade.equity) || 0);
+  if (trade.side === "buy") return Math.max(0, (Number(trade.spend) || 0) / equity);
+  if (trade.side === "short") return Math.max(0, (Number(trade.gross) || 0) / equity);
+  return 0;
+}
+
+function collectAchievementSignals({ active, endIndex, trades, score, returnPct, expected, reviewText, tags, stats }) {
+  const tradeCount = trades.length;
+  const openingTrades = trades.filter((trade) => trade.side === "buy" || trade.side === "short");
+  const exitTrades = trades.filter((trade) => trade.side === "sell" || trade.side === "cover");
+  const entryFractions = openingTrades.map(entryFractionForTrade).filter((value) => value > 0);
+  const extremes = challengePriceExtremes(active.startIndex, endIndex);
+  const hasProfit = returnPct > 0;
+  const biasChosen = Boolean(active.bias);
+  const directionCorrect = biasChosen && active.bias === expected;
+  const reviewLength = reviewText.length;
+
+  return {
+    directionCorrect,
+    zeroTradeCorrect: tradeCount === 0 && directionCorrect,
+    zeroTradeHighScore: tradeCount === 0 && score >= 80,
+    score80plus: score >= 80,
+    score90plus: score >= 90,
+    score100: score >= 100,
+    lowDrawdownWin: stats.maxDrawdown < 0.01 && hasProfit,
+    lowDrawdown: stats.maxDrawdown < 0.02,
+    longReview: reviewLength >= 100,
+    veryLongReview: reviewLength >= 200,
+    mostBookmarks: state.bookmarks.length,
+    mostTrades: tradeCount,
+    quickGame: Date.now() - active.startedAt <= 180_000,
+    ultraQuickGame: Date.now() - active.startedAt <= 60_000,
+    fullSendWin: hasProfit && entryFractions.some((value) => value >= 0.95),
+    microWin: hasProfit && entryFractions.some((value) => value <= 0.10),
+    oppositeWin: biasChosen && active.bias !== expected && hasProfit,
+    tripleTradeWin: tradeCount === 3 && hasProfit,
+    oneTradeWin: tradeCount === 1 && hasProfit,
+    nearBottomBuy:
+      hasProfit &&
+      extremes.low != null &&
+      openingTrades.some((trade) => trade.side === "buy" && trade.price <= extremes.low * 1.008),
+    nearTopSell:
+      hasProfit &&
+      extremes.high != null &&
+      [...openingTrades, ...exitTrades].some((trade) => (trade.side === "short" || trade.side === "sell") && trade.price >= extremes.high * 0.992),
+    usedTags: tags,
+  };
 }
 
 function finishChallenge(reason = "manual") {
@@ -236,7 +300,17 @@ function finishChallenge(reason = "manual") {
   const finalIndex = state.currentIndex;
   const trades = state.account.trades.filter((trade) => trade.time >= active.startTime);
   const hasStop = trades.some((trade) => trade.stopPrice) || Boolean(state.account.stopPrice);
-  const reviewText = [els.sessionNotesInput.value.trim(), els.tradeReasonInput.value.trim(), ...state.bookmarks.map((mark) => mark.text || "")].join(" ").trim();
+  const notes = els.sessionNotesInput.value.trim();
+  const tradeReason = els.tradeReasonInput.value.trim();
+  const settlementTags = selectedTags();
+  const reviewText = [
+    notes,
+    tradeReason,
+    ...trades.map((trade) => [trade.reason, trade.review].filter(Boolean).join(" ")),
+    ...state.bookmarks.map((mark) => mark.text || ""),
+  ]
+    .join(" ")
+    .trim();
   const stats = accountStats(endCandle.close);
   const returnPct = stats.pnl / state.account.initialCash;
 
@@ -250,6 +324,17 @@ function finishChallenge(reason = "manual") {
   const score = clamp(directionScore + pnlScore + riskScore + patienceScore + reviewScore + completionScore, 0, 100);
   const levelStars = active.type === "level" ? levelStarsFromResult(score, returnPct) : null;
   const earnedXp = Math.round(active.xp * (0.35 + score / 100));
+  const achievementSignals = collectAchievementSignals({
+    active,
+    endIndex,
+    trades,
+    score,
+    returnPct,
+    expected,
+    reviewText,
+    tags: settlementTags,
+    stats,
+  });
   const newAchievements = applyGameRewards({
     type: active.type,
     score,
@@ -268,6 +353,7 @@ function finishChallenge(reason = "manual") {
     levelDatasetKey: active.levelDatasetKey,
     levelDatasetLabel: active.levelDatasetLabel,
     stars: levelStars,
+    ...achievementSignals,
   });
 
   state.hideFuture = false;
@@ -276,9 +362,6 @@ function finishChallenge(reason = "manual") {
   state.currentIndex = endIndex;
   centerOnCurrent(state.viewEnd - state.viewStart || 220);
   const reviewerId = pickSettlementReviewerId(active);
-  const notes = els.sessionNotesInput.value.trim();
-  const tradeReason = els.tradeReasonInput.value.trim();
-  const settlementTags = selectedTags();
   state.game.lastSettlement = {
     id: active.id,
     title: active.title,
@@ -345,6 +428,7 @@ function finishChallenge(reason = "manual") {
 
 function applyGameRewards(result) {
   const profile = state.game.profile;
+  const stats = profile.stats;
   const today = todayKey();
   if (profile.lastPlayedDate !== today) {
     const yesterdayKey = offsetDateKey(today, -1);
@@ -354,13 +438,38 @@ function applyGameRewards(result) {
 
   profile.xp += result.earnedXp;
   profile.level = levelFromXp(profile.xp);
-  profile.stats.completed += 1;
-  profile.stats[result.type] = (profile.stats[result.type] || 0) + 1;
-  profile.stats.totalScore += result.score;
-  profile.stats.bestScore = Math.max(profile.stats.bestScore, result.score);
-  if (result.hasStop) profile.stats.stopUsed += 1;
-  if (result.reviewed) profile.stats.reviewed += 1;
-  if (result.goodFlat) profile.stats.goodFlat += 1;
+  stats.completed += 1;
+  stats[result.type] = (stats[result.type] || 0) + 1;
+  stats.totalScore += result.score;
+  stats.bestScore = Math.max(stats.bestScore, result.score);
+  if (result.hasStop) stats.stopUsed += 1;
+  if (result.reviewed) stats.reviewed += 1;
+  if (result.goodFlat) stats.goodFlat += 1;
+
+  stats.stopUsedStreak = result.hasStop ? (stats.stopUsedStreak || 0) + 1 : 0;
+  stats.reviewedStreak = result.reviewed ? (stats.reviewedStreak || 0) + 1 : 0;
+  if (result.directionCorrect) stats.directionCorrect += 1;
+  if (result.zeroTradeCorrect) stats.zeroTradeCorrect += 1;
+  if (result.zeroTradeHighScore) stats.zeroTradeHighScore += 1;
+  if (result.score80plus) stats.score80plus += 1;
+  if (result.score90plus) stats.score90plus += 1;
+  if (result.score100) stats.score100 += 1;
+  if (result.lowDrawdownWin) stats.lowDrawdownWins += 1;
+  if (result.lowDrawdown) stats.lowDrawdown += 1;
+  if (result.longReview) stats.longReview += 1;
+  if (result.veryLongReview) stats.veryLongReview += 1;
+  if (result.fullSendWin) stats.fullSendWins += 1;
+  if (result.microWin) stats.microWins += 1;
+  if (result.oppositeWin) stats.oppositeWins += 1;
+  if (result.tripleTradeWin) stats.tripleTradeWins += 1;
+  if (result.oneTradeWin) stats.oneTradeWins += 1;
+  if (result.quickGame) stats.quickGames += 1;
+  if (result.ultraQuickGame) stats.ultraQuickGames += 1;
+  if (result.nearBottomBuy) stats.nearBottomBuy += 1;
+  if (result.nearTopSell) stats.nearTopSell += 1;
+  stats.mostBookmarks = Math.max(stats.mostBookmarks || 0, result.mostBookmarks || 0);
+  stats.mostTrades = Math.max(stats.mostTrades || 0, result.mostTrades || 0);
+  stats.tagsUsed = Array.from(new Set([...(Array.isArray(stats.tagsUsed) ? stats.tagsUsed : []), ...(result.usedTags || [])]));
 
   const levelRecord = result.type === "level" ? recordLevelResult(result) : null;
 
@@ -386,14 +495,7 @@ function applyGameRewards(result) {
 
   const characterGain = applyCharacterRewards(result);
 
-  const newAchievements = [];
-  for (const achievement of ACHIEVEMENTS) {
-    if (!profile.achievements.includes(achievement.id) && achievement.test(profile)) {
-      profile.achievements.push(achievement.id);
-      newAchievements.push(achievement);
-    }
-  }
-  profile.recentAchievements = [...newAchievements.map((item) => item.id), ...profile.recentAchievements].slice(0, 5);
+  const newAchievements = unlockNewAchievements(profile);
   saveGameProfile();
   state.game.lastCharacterGain = characterGain;
   state.game.lastLevelRecord = levelRecord;

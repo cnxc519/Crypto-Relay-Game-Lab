@@ -23,8 +23,15 @@ const {
 const {
   LEVEL_TITLES,
   CHALLENGE_TYPES,
-  ACHIEVEMENTS,
   CHARACTER_CONFIG,
 } = window.BtcReplay.content;
+
+const {
+  ACHIEVEMENT_CATEGORIES,
+  ACHIEVEMENTS,
+  achievementCategory,
+  achievementProgressSnapshot,
+  unlockNewAchievements,
+} = window.BtcReplay.achievements;
 
 const { els, ctx } = window.BtcReplay.dom;

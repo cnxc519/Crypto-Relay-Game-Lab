@@ -32,28 +32,70 @@ function activeTakeFromInput() {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function normalizeRiskPrice(price) {
+  if (!Number.isFinite(price) || price <= 0) return null;
+  return Number(price.toFixed(2));
+}
+
+function riskLineLabel(kind) {
+  return kind === "stop" ? "止损" : "止盈";
+}
+
+function riskLineValue(kind) {
+  return kind === "stop" ? state.account.stopPrice : state.account.takePrice;
+}
+
+function syncRiskInputs() {
+  els.stopLossInput.value = state.account.stopPrice == null ? "" : normalizeRiskPrice(state.account.stopPrice).toFixed(2);
+  els.takeProfitInput.value = state.account.takePrice == null ? "" : normalizeRiskPrice(state.account.takePrice).toFixed(2);
+}
+
+function setRiskLine(kind, price, options = {}) {
+  const normalized = normalizeRiskPrice(price);
+  if (kind === "stop") state.account.stopPrice = normalized;
+  if (kind === "take") state.account.takePrice = normalized;
+  syncRiskInputs();
+
+  if (options.renderMode === "chart") renderChart();
+  else if (options.renderMode !== "none") render();
+
+  if (!options.silent) {
+    if (normalized) showToast(options.message || `已设置${riskLineLabel(kind)}：$${priceFmt.format(normalized)}`);
+    else showToast(options.message || `已清除${riskLineLabel(kind)}线`);
+  }
+  return normalized;
+}
+
+function addRiskLine(kind) {
+  const candle = currentCandle();
+  if (!candle) return;
+  const price = setRiskLine(kind, candle.close, { silent: true });
+  if (price != null) showToast(`已添加${riskLineLabel(kind)}线：$${priceFmt.format(price)}，可直接在图上拖动修改`);
+}
+
 function setStopsFromInputs() {
   state.account.stopPrice = activeStopFromInput();
   state.account.takePrice = activeTakeFromInput();
+  syncRiskInputs();
   render();
   showToast("已更新止损止盈线");
 }
 
 function clearStops() {
-  state.account.stopPrice = null;
-  state.account.takePrice = null;
-  els.stopLossInput.value = "";
-  els.takeProfitInput.value = "";
+  clearAccountRiskLines();
   render();
   showToast("已清除风控线");
 }
 
 function tradeCommon(extra = {}) {
   const candle = currentCandle();
+  const action = extra.action || "";
+  const closing = isClosingTrade(action);
   return {
     id: uniqueId("trade"),
     time: extra.time ?? candle?.time ?? Date.now(),
     reason: extra.reason ?? els.tradeReasonInput.value.trim(),
+    review: extra.review ?? (closing ? els.sessionNotesInput.value.trim() : ""),
     tags: extra.tags ?? selectedTags(),
     stopPrice: extra.stopPrice ?? state.account.stopPrice,
     takePrice: extra.takePrice ?? state.account.takePrice,
@@ -67,11 +109,15 @@ function activeChallengeTrades() {
 }
 
 function hasTradeReason() {
-  return Boolean(els.tradeReasonInput.value.trim() || els.sessionNotesInput.value.trim() || els.bookmarkInput.value.trim());
+  return Boolean(els.tradeReasonInput.value.trim());
 }
 
 function isOpeningTrade(side) {
   return side === "buy" || side === "short";
+}
+
+function isClosingTrade(side) {
+  return side === "sell" || side === "cover";
 }
 
 function validStopForSide(side, price, stopPrice) {
@@ -209,7 +255,7 @@ function executeTrade(side, pct, options = {}) {
     return null;
   }
   if (!validateCharacterTrade(action, { ...options, pct, price })) return null;
-  const common = tradeCommon(options);
+  const common = tradeCommon({ ...options, action });
 
   if (action === "buy") {
     const requestedSpend = options.spend ?? state.account.cash * pct;
@@ -227,6 +273,7 @@ function executeTrade(side, pct, options = {}) {
     state.account.positionRisk += riskAmount;
     state.account.stopPrice = stopPrice;
     state.account.takePrice = takePrice;
+    syncRiskInputs();
 
     const trade = {
       ...common,
@@ -266,6 +313,7 @@ function executeTrade(side, pct, options = {}) {
     state.account.positionRisk += riskAmount;
     state.account.stopPrice = stopPrice;
     state.account.takePrice = takePrice;
+    syncRiskInputs();
 
     const trade = {
       ...common,
@@ -387,10 +435,11 @@ function closePosition(options = {}) {
     showToast("当前没有持仓。");
     return null;
   }
+  const manualReason = els.tradeReasonInput.value.trim();
   const trade =
     side === "long"
-      ? executeTrade("sell", 1, { reason: options.reason ?? "手动平仓", skipCharacterRules: true })
-      : executeTrade("cover", 1, { reason: options.reason ?? "手动平空", skipCharacterRules: true });
+      ? executeTrade("sell", 1, { reason: options.reason ?? (manualReason || "手动平仓"), skipCharacterRules: true })
+      : executeTrade("cover", 1, { reason: options.reason ?? (manualReason || "手动平空"), skipCharacterRules: true });
   if (trade) showToast(`已平${positionSideLabel(side)}仓`);
   return trade;
 }

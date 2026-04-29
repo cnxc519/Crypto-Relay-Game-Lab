@@ -49,6 +49,8 @@ const els = {
   currentPrice: $("currentPrice"),
   stopLossInput: $("stopLossInput"),
   takeProfitInput: $("takeProfitInput"),
+  addStopBtn: $("addStopBtn"),
+  addTakeBtn: $("addTakeBtn"),
   riskPctInput: $("riskPctInput"),
   tradeReasonInput: $("tradeReasonInput"),
   riskBuyBtn: $("riskBuyBtn"),

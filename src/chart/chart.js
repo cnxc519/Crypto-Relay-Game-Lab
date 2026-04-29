@@ -303,14 +303,54 @@ function drawTrades(metrics, scale, start, end) {
   }
 }
 
-function drawPriceLine(metrics, scale, price, color, label) {
+function pointInPriceArea(point, metrics = chartMetrics()) {
+  return (
+    point.x >= metrics.plotLeft &&
+    point.x <= metrics.plotRight &&
+    point.y >= metrics.plotTop &&
+    point.y <= metrics.priceBottom
+  );
+}
+
+function activeChartScale(metrics = chartMetrics()) {
+  return createScale(visibleBounds(state.viewStart, state.viewEnd), metrics);
+}
+
+function riskLineDescriptors() {
+  return [
+    { kind: "stop", price: state.account.stopPrice, color: "#ef5350", label: "SL" },
+    { kind: "take", price: state.account.takePrice, color: "#18b982", label: "TP" },
+  ].filter((line) => line.price);
+}
+
+function pickRiskLineAtPoint(point, metrics = chartMetrics(), scale = activeChartScale(metrics)) {
+  if (!point || !pointInPriceArea(point, metrics)) return null;
+
+  let best = null;
+  for (const line of riskLineDescriptors()) {
+    const y = scale.y(line.price);
+    if (y < metrics.plotTop - 20 || y > metrics.priceBottom + 20) continue;
+    const distance = Math.abs(point.y - y);
+    if (distance <= 10 && (!best || distance < best.distance)) {
+      best = { ...line, y, distance };
+    }
+  }
+  return best;
+}
+
+function priceFromChartY(y, metrics = chartMetrics(), scale = activeChartScale(metrics)) {
+  return scale.price(clamp(y, metrics.plotTop, metrics.priceBottom));
+}
+
+function drawPriceLine(metrics, scale, price, color, label, options = {}) {
   if (!price) return;
   const y = scale.y(price);
   if (y < metrics.plotTop - 20 || y > metrics.priceBottom + 20) return;
+  const active = Boolean(options.active);
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = active ? 1.8 : 1;
+  ctx.setLineDash(active ? [8, 4] : [4, 4]);
   ctx.beginPath();
   ctx.moveTo(metrics.plotLeft, y);
   ctx.lineTo(metrics.plotRight, y);
@@ -318,11 +358,16 @@ function drawPriceLine(metrics, scale, price, color, label) {
   ctx.setLineDash([]);
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.font = "12px Inter, sans-serif";
+  ctx.font = active ? "600 12px Inter, sans-serif" : "12px Inter, sans-serif";
   ctx.fillText(`${label} ${priceFmt.format(price)}`, metrics.plotLeft + 8, y - 10);
+  if (active) {
+    ctx.beginPath();
+    ctx.arc(metrics.plotRight - 10, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
-function drawAnnotations(metrics, scale, start, end) {
+function drawAnnotations(metrics, scale, start, end, options = {}) {
   for (const line of state.annotations) {
     drawPriceLine(metrics, scale, line.price, line.color || "#f0b90b", line.label || "水平线");
   }
@@ -341,8 +386,8 @@ function drawAnnotations(metrics, scale, start, end) {
     ctx.fill();
   }
 
-  drawPriceLine(metrics, scale, state.account.stopPrice, "#ef5350", "SL");
-  drawPriceLine(metrics, scale, state.account.takePrice, "#18b982", "TP");
+  drawPriceLine(metrics, scale, state.account.stopPrice, "#ef5350", "SL", { active: options.activeRiskLine === "stop" });
+  drawPriceLine(metrics, scale, state.account.takePrice, "#18b982", "TP", { active: options.activeRiskLine === "take" });
 }
 
 function drawHover(metrics, scale, start, end) {
@@ -402,12 +447,13 @@ function renderChart() {
   const end = state.viewEnd;
   const bounds = visibleBounds(start, end);
   const scale = createScale(bounds, metrics);
+  const activeRiskLine = state.drag?.mode === "risk-line" ? state.drag.kind : pickRiskLineAtPoint(state.hover, metrics, scale)?.kind;
 
   drawGrid(metrics, scale, start, end);
   drawCandles(metrics, scale, bounds, start, end);
   if (state.showMA20) drawMA(metrics, scale, start, end, 20, "#38bdf8");
   if (state.showMA60) drawMA(metrics, scale, start, end, 60, "#f0b90b");
-  drawAnnotations(metrics, scale, start, end);
+  drawAnnotations(metrics, scale, start, end, { activeRiskLine });
   drawCurrentLine(metrics, start, end);
   drawTrades(metrics, scale, start, end);
   drawHover(metrics, scale, start, end);
@@ -473,7 +519,7 @@ function renderAccount() {
     .slice(0, 80)
     .map((trade) => {
       const sideText = tradeSideLabel(trade);
-      const note = [trade.reason, ...(trade.tags || [])].filter(Boolean).join(" / ");
+      const note = tradeNoteSummary(trade);
       return `
         <tr>
           <td>${formatVisibleTime(trade.time, findIndexAtOrBefore(state.candles, trade.time))}</td>

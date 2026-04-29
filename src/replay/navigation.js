@@ -43,9 +43,8 @@ function loadCandles(candles, fileName) {
   state.game.active = null;
   state.game.externalAccount = null;
   state.game.settling = false;
-  els.sessionNotesInput.value = "";
+  clearTradeDraftInputs();
   els.bookmarkInput.value = "";
-  els.tradeReasonInput.value = "";
   els.stopLossInput.value = "";
   els.takeProfitInput.value = "";
   state.dateRevealed = false;
@@ -170,6 +169,7 @@ function revealTo(index, recenter = false) {
   const target = clamp(index, 0, state.candles.length - 1);
   state.currentIndex = target;
   if (target > previous) {
+    clearTradeDraftInputs();
     const triggerIndex = checkAutoExit(previous + 1, target);
     if (triggerIndex != null) state.currentIndex = triggerIndex;
   }

@@ -34,6 +34,9 @@ function normalizeGameProfile(profile) {
   if (!merged.dailyHistory || typeof merged.dailyHistory !== "object" || Array.isArray(merged.dailyHistory)) {
     merged.dailyHistory = {};
   }
+  if (!Array.isArray(merged.stats.tagsUsed)) {
+    merged.stats.tagsUsed = [];
+  }
   if (!merged.levelMode || typeof merged.levelMode !== "object" || Array.isArray(merged.levelMode)) {
     merged.levelMode = createGameProfile().levelMode;
   }

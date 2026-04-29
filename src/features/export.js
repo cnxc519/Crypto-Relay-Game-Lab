@@ -18,7 +18,7 @@ function downloadText(filename, text, type = "text/plain") {
 }
 
 function exportTrades() {
-  const header = ["time", "side", "price", "qty", "fee", "realized_pnl", "r", "reason", "tags"].join(",");
+  const header = ["time", "side", "price", "qty", "fee", "realized_pnl", "r", "reason", "review", "tags"].join(",");
   const rows = state.account.trades.map((trade) =>
     [
       formatTime(trade.time),
@@ -29,6 +29,7 @@ function exportTrades() {
       trade.realizedPnl ?? "",
       trade.r ?? "",
       trade.reason || "",
+      trade.review || "",
       (trade.tags || []).join("|"),
     ]
       .map(csvEscape)
@@ -40,6 +41,12 @@ function exportTrades() {
 function exportReport() {
   const candle = currentCandle();
   const stats = accountStats(candle?.close ?? 0);
+  const currentNotes = els.sessionNotesInput.value.trim();
+  const savedReviews = state.account.trades
+    .map((trade) => trade.review || "")
+    .filter(Boolean)
+    .filter((review, index, list) => review !== currentNotes && list.indexOf(review) === index);
+  const reviewBlock = [currentNotes, ...savedReviews.map((review) => `- ${review}`)].filter(Boolean).join("\n");
   const lines = [
     `# ${els.sessionNameInput.value.trim() || "BTC Replay 训练报告"}`,
     "",
@@ -54,7 +61,7 @@ function exportReport() {
     "",
     "## 总复盘",
     "",
-    els.sessionNotesInput.value || "暂无",
+    reviewBlock || "暂无",
     "",
     "## 标注",
     "",
@@ -65,7 +72,7 @@ function exportReport() {
     "## 交易",
     "",
     ...(state.account.trades.length
-      ? state.account.trades.map((trade) => `- ${formatTime(trade.time)} ${tradeSideLabel(trade)} $${priceFmt.format(trade.price)} ${btcFmt.format(trade.qty)} BTC ${trade.reason || ""}`)
+      ? state.account.trades.map((trade) => `- ${formatTime(trade.time)} ${tradeSideLabel(trade)} $${priceFmt.format(trade.price)} ${btcFmt.format(trade.qty)} BTC ${tradeNoteSummary(trade) || "-"}`)
       : ["暂无"]),
   ];
   downloadText("btc-replay-report.md", lines.join("\n"), "text/markdown;charset=utf-8");

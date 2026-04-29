@@ -153,6 +153,48 @@ function createCharacterState() {
   };
 }
 
+function createProfileStats() {
+  return {
+    completed: 0,
+    blind: 0,
+    trend: 0,
+    trap: 0,
+    survival: 0,
+    revenge: 0,
+    level: 0,
+    bestScore: 0,
+    goodFlat: 0,
+    stopUsed: 0,
+    reviewed: 0,
+    totalScore: 0,
+    dailyRewards: 0,
+    directionCorrect: 0,
+    zeroTradeCorrect: 0,
+    zeroTradeHighScore: 0,
+    score80plus: 0,
+    score90plus: 0,
+    score100: 0,
+    stopUsedStreak: 0,
+    reviewedStreak: 0,
+    lowDrawdownWins: 0,
+    lowDrawdown: 0,
+    longReview: 0,
+    veryLongReview: 0,
+    tagsUsed: [],
+    mostBookmarks: 0,
+    fullSendWins: 0,
+    microWins: 0,
+    oppositeWins: 0,
+    tripleTradeWins: 0,
+    oneTradeWins: 0,
+    quickGames: 0,
+    ultraQuickGames: 0,
+    mostTrades: 0,
+    nearBottomBuy: 0,
+    nearTopSell: 0,
+  };
+}
+
 function createGameProfile() {
   return {
     xp: 0,
@@ -172,21 +214,7 @@ function createGameProfile() {
       lastLevelId: "",
       page: 0,
     },
-    stats: {
-      completed: 0,
-      blind: 0,
-      trend: 0,
-      trap: 0,
-      survival: 0,
-      revenge: 0,
-      level: 0,
-      bestScore: 0,
-      goodFlat: 0,
-      stopUsed: 0,
-      reviewed: 0,
-      totalScore: 0,
-      dailyRewards: 0,
-    },
+    stats: createProfileStats(),
   };
 }
 

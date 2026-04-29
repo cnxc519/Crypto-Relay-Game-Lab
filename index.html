@@ -215,16 +215,43 @@
                 <span>单笔风险 %</span>
                 <input id="riskPctInput" type="number" min="0" step="0.1" value="1" />
               </label>
-              <label class="field">
-                <span>交易理由</span>
-                <input id="tradeReasonInput" type="text" maxlength="80" placeholder="突破 / 回踩 / 震荡边界" />
-              </label>
             </div>
+            <div class="button-row">
+              <button id="addStopBtn" type="button">添加止损</button>
+              <button id="addTakeBtn" type="button">添加止盈</button>
+              <button id="attachStopsBtn" type="button">更新止损止盈</button>
+              <button id="clearStopsBtn" type="button">清除风控线</button>
+            </div>
+            <p class="hint">点击添加会按当前价生成风控线，图上的 SL / TP 线也可以直接拖动修改。</p>
             <div class="button-row">
               <button id="riskBuyBtn" type="button">按风险买入</button>
               <button id="closePositionBtn" type="button">平仓</button>
-              <button id="attachStopsBtn" type="button">更新止损止盈</button>
-              <button id="clearStopsBtn" type="button">清除风控线</button>
+            </div>
+            <div class="trade-journal">
+              <div class="trade-journal-head">
+                <strong>本笔理由与平仓复盘</strong>
+                <span>切到下一根 K 线会自动清空，避免把上一笔内容带到下一笔。</span>
+              </div>
+              <label class="field">
+                <span>开仓理由</span>
+                <input id="tradeReasonInput" type="text" maxlength="80" placeholder="例如：回踩确认 / 突破续强 / 区间下沿承接" />
+              </label>
+              <label class="field">
+                <span>平仓复盘</span>
+                <textarea id="sessionNotesInput" rows="4" placeholder="例如：为什么在这里平？这笔做对了什么，下一次还要等什么？"></textarea>
+              </label>
+              <div class="field">
+                <span>复盘标签</span>
+                <div class="tag-grid">
+                  <label><input type="checkbox" value="计划内执行" /> 计划内执行</label>
+                  <label><input type="checkbox" value="确认充分" /> 确认充分</label>
+                  <label><input type="checkbox" value="拿仓耐心" /> 拿仓耐心</label>
+                  <label><input type="checkbox" value="过早入场" /> 过早入场</label>
+                  <label><input type="checkbox" value="逆势硬做" /> 逆势硬做</label>
+                  <label><input type="checkbox" value="情绪化操作" /> 情绪化操作</label>
+                </div>
+              </div>
+              <p class="hint">标签既可以记做对的地方，也可以记失误；减仓、平仓和导出记录都会带上当前标签。</p>
             </div>
           </section>
 
@@ -279,7 +306,7 @@
           </section>
 
           <section class="panel">
-            <h2>复盘笔记</h2>
+            <h2>盘中标注</h2>
             <label class="field">
               <span>训练标题</span>
               <input id="sessionNameInput" type="text" maxlength="60" placeholder="例如 4H 顺势突破练习" />
@@ -288,23 +315,12 @@
               <span>当前标注</span>
               <input id="bookmarkInput" type="text" maxlength="100" placeholder="当下判断、关键位、情绪状态" />
             </label>
-            <div class="tag-grid">
-              <label><input type="checkbox" value="追涨杀跌" /> 追涨杀跌</label>
-              <label><input type="checkbox" value="过早入场" /> 过早入场</label>
-              <label><input type="checkbox" value="没等确认" /> 没等确认</label>
-              <label><input type="checkbox" value="逆势开单" /> 逆势开单</label>
-              <label><input type="checkbox" value="止损太宽" /> 止损太宽</label>
-              <label><input type="checkbox" value="过早止盈" /> 过早止盈</label>
-            </div>
             <div class="button-row">
               <button id="addBookmarkBtn" type="button">添加标注</button>
               <button id="addHlineBtn" type="button">加水平线</button>
               <button id="clearLinesBtn" type="button">清除线</button>
             </div>
-            <label class="field">
-              <span>总复盘</span>
-              <textarea id="sessionNotesInput" rows="5" placeholder="这段行情我看错/看对了什么？下一次要等什么确认？"></textarea>
-            </label>
+            <p class="hint">这里更适合记关键位、情绪和图上标注；平仓复盘已经放到上面的下单区。</p>
             <div class="list" id="bookmarkList">暂无标注</div>
           </section>
 
@@ -436,9 +452,9 @@
     </div>
 
     <div class="modal-backdrop" id="achievementModal">
-      <div class="modal wide-modal">
+      <div class="modal wide-modal achievement-modal-shell">
         <div class="panel-title-row">
-          <h2>成就列表</h2>
+          <h2>成就图鉴</h2>
           <button id="closeAchievementBtn" type="button">关闭</button>
         </div>
         <div id="achievementAllList" class="achievement-all-list"></div>
@@ -478,6 +494,7 @@
     </div>
 
     <script src="./src/config/constants.js"></script>
+    <script src="./src/content/achievements.js"></script>
     <script src="./src/content/game-content.js"></script>
     <script src="./src/ui/dom.js"></script>
     <script src="./src/core/deps.js"></script>
