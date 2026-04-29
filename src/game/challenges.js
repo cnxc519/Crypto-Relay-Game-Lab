@@ -430,6 +430,10 @@ function finishChallenge(reason = "manual") {
   syncTimeline();
   render();
   showSettlement();
+  const celebrations = collectCelebrationEvents();
+  if (celebrations.length) {
+    window.setTimeout(() => showCelebrations(celebrations), 600);
+  }
 }
 
 function applyGameRewards(result) {
@@ -529,7 +533,7 @@ function applyCharacterRewards(result) {
 
   let ascended = false;
   let level = characterLevelFromXp(charState.xp, charState.stage);
-  const atCap = level >= charState.stage * 20;
+  const atCap = level >= charState.stage * 200;
   const trialSuccesses = charState.trialWindow.filter(Boolean).length;
   const neededMaterials = charState.stage * 12;
   if (charState.stage < 5 && atCap && charState.materials >= neededMaterials && trialSuccesses >= 3) {

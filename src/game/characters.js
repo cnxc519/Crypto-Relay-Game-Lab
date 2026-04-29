@@ -1,11 +1,11 @@
 "use strict";
 
 function levelFromXp(xp) {
-  return Math.max(1, Math.floor(Math.sqrt(Math.max(0, xp) / 120)) + 1);
+  return Math.max(1, Math.floor(Math.sqrt(Math.max(0, xp) / 8)) + 1);
 }
 
 function xpForLevel(level) {
-  return Math.pow(Math.max(0, level - 1), 2) * 120;
+  return Math.pow(Math.max(0, level - 1), 2) * 8;
 }
 
 function characterById(id) {
@@ -17,12 +17,12 @@ function activeCharacter() {
 }
 
 function characterLevelFromXp(xp, stage) {
-  const rawLevel = Math.floor(Math.sqrt(Math.max(0, xp) / 55)) + 1;
-  return clamp(rawLevel, 1, stage * 20);
+  const rawLevel = Math.floor(Math.sqrt(Math.max(0, xp) / 4)) + 1;
+  return clamp(rawLevel, 1, stage * 200);
 }
 
 function characterXpForLevel(level) {
-  return Math.pow(Math.max(0, level - 1), 2) * 55;
+  return Math.pow(Math.max(0, level - 1), 2) * 4;
 }
 
 function stageName(stage) {

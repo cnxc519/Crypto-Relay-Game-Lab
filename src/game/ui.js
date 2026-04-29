@@ -68,8 +68,8 @@ function renderCharacterPanel() {
   const charState = profile.characters[character.id];
   const level = characterLevelFromXp(charState.xp, charState.stage);
   const currentLevelXp = characterXpForLevel(level);
-  const nextLevelXp = characterXpForLevel(Math.min(level + 1, charState.stage * 20 + 1));
-  const xpProgress = level >= charState.stage * 20 ? 100 : clamp(((charState.xp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp)) * 100, 0, 100);
+  const nextLevelXp = characterXpForLevel(Math.min(level + 1, charState.stage * 200 + 1));
+  const xpProgress = level >= charState.stage * 200 ? 100 : clamp(((charState.xp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp)) * 100, 0, 100);
   const trialSuccesses = charState.trialWindow.filter(Boolean).length;
   const ascensionNeed = charState.stage * 12;
 

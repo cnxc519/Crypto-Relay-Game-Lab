@@ -154,6 +154,9 @@ const els = {
   characterMaterialList: $("characterMaterialList"),
   characterQuestBtn: $("characterQuestBtn"),
   ascensionTrialBtn: $("ascensionTrialBtn"),
+  celebrationOverlay: $("celebrationOverlay"),
+  celebrationContainer: $("celebrationContainer"),
+  celebrationCloseBtn: $("celebrationCloseBtn"),
 };
 
 const ctx = els.canvas.getContext("2d");

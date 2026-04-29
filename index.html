@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BTC Replay Lab</title>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" type="image/png" href="./character/洁白神圣.png" />
   </head>
   <body>
     <div class="app">
@@ -499,6 +500,12 @@
       </div>
     </div>
 
+    <div class="celebration-overlay" id="celebrationOverlay">
+      <div class="celebration-bg"></div>
+      <div class="celebration-container" id="celebrationContainer"></div>
+      <button class="celebration-close" id="celebrationCloseBtn" type="button">点击继续</button>
+    </div>
+
     <script src="./src/config/constants.js"></script>
     <script src="./src/content/achievements.js"></script>
     <script src="./src/content/game-content.js"></script>
@@ -515,6 +522,7 @@
     <script src="./src/replay/navigation.js"></script>
     <script src="./src/trade/trade.js"></script>
     <script src="./src/chart/chart.js"></script>
+    <script src="./src/game/celebration.js"></script>
     <script src="./src/game/challenges.js"></script>
     <script src="./src/game/daily.js"></script>
     <script src="./src/game/level-modal.js"></script>
