@@ -1,0 +1,163 @@
+"use strict";
+
+const ACHIEVEMENT_CATEGORIES = [
+  { id: "beginner", name: "入门之路", icon: "起步", order: 1 },
+  { id: "streak", name: "坚持不懈", icon: "坚持", order: 2 },
+  { id: "insight", name: "火眼金睛", icon: "眼光", order: 3 },
+  { id: "skill", name: "交易高手", icon: "技术", order: 4 },
+  { id: "risk", name: "风控铁壁", icon: "风控", order: 5 },
+  { id: "review", name: "复盘修行", icon: "复盘", order: 6 },
+  { id: "mode", name: "模式专家", icon: "模式", order: 7 },
+  { id: "level", name: "闯关达人", icon: "闯关", order: 8 },
+  { id: "character", name: "角色之缘", icon: "角色", order: 9 },
+  { id: "fun", name: "趣味挑战", icon: "趣味", order: 10 },
+  { id: "legend", name: "传奇之路", icon: "传奇", order: 11 },
+];
+
+const CATEGORY_MAP = Object.fromEntries(ACHIEVEMENT_CATEGORIES.map((c) => [c.id, c]));
+
+const ACHIEVEMENTS = [
+  // ── 入门之路 ──────────────────────────────────
+  { id: "first_run", category: "beginner", name: "第一局开打", desc: "完成 1 个训练关卡", test: (p) => p.stats.completed >= 1 },
+  { id: "three_runs", category: "beginner", name: "开始上瘾", desc: "累计完成 3 局", test: (p) => p.stats.completed >= 3 },
+  { id: "ten_runs", category: "beginner", name: "历史回放常客", desc: "累计完成 10 局", test: (p) => p.stats.completed >= 10 },
+  { id: "twenty_runs", category: "beginner", name: "盘感打磨中", desc: "累计完成 20 局", test: (p) => p.stats.completed >= 20 },
+  { id: "fifty_runs", category: "beginner", name: "回放长跑者", desc: "累计完成 50 局", test: (p) => p.stats.completed >= 50 },
+  { id: "hundred_runs", category: "beginner", name: "百里挑一", desc: "累计完成 100 局", test: (p) => p.stats.completed >= 100 },
+  { id: "two_hundred_runs", category: "beginner", name: "训练成习惯", desc: "累计完成 200 局", test: (p) => p.stats.completed >= 200 },
+  { id: "five_hundred_runs", category: "beginner", name: "半千旅人", desc: "累计完成 500 局", test: (p) => p.stats.completed >= 500 },
+  { id: "thousand_runs", category: "beginner", name: "千局传说", desc: "累计完成 1000 局", test: (p) => p.stats.completed >= 1000 },
+
+  // ── 坚持不懈 ──────────────────────────────────
+  { id: "streak_3", category: "streak", name: "三天不断线", desc: "连续训练 3 天", test: (p) => p.streak >= 3 },
+  { id: "streak_7", category: "streak", name: "七日训练舱", desc: "连续训练 7 天", test: (p) => p.streak >= 7 },
+  { id: "streak_14", category: "streak", name: "两周手感", desc: "连续训练 14 天", test: (p) => p.streak >= 14 },
+  { id: "streak_30", category: "streak", name: "月度全勤", desc: "连续训练 30 天", test: (p) => p.streak >= 30 },
+  { id: "streak_60", category: "streak", name: "双月修行", desc: "连续训练 60 天", test: (p) => p.streak >= 60 },
+  { id: "streak_100", category: "streak", name: "百日筑基", desc: "连续训练 100 天", test: (p) => p.streak >= 100 },
+  { id: "streak_200", category: "streak", name: "年度意志力", desc: "连续训练 200 天", test: (p) => p.streak >= 200 },
+  { id: "streak_365", category: "streak", name: "全年无休", desc: "连续训练 365 天", test: (p) => p.streak >= 365 },
+
+  // ── 火眼金睛 ──────────────────────────────────
+  { id: "observer", category: "insight", name: "观望也是操作", desc: "用观望拿到一次高分（≥70）", test: (p) => p.stats.goodFlat >= 1 },
+  { id: "observer_5", category: "insight", name: "不动如山", desc: "用观望拿到 5 次高分", test: (p) => p.stats.goodFlat >= 5 },
+  { id: "observer_15", category: "insight", name: "沉默是金", desc: "用观望拿到 15 次高分", test: (p) => p.stats.goodFlat >= 15 },
+  { id: "observer_30", category: "insight", name: "空仓大师", desc: "用观望拿到 30 次高分", test: (p) => p.stats.goodFlat >= 30 },
+  { id: "direction_5", category: "insight", name: "盘感初现", desc: "方向判断正确 5 次", test: (p) => (p.stats.directionCorrect || 0) >= 5 },
+  { id: "direction_25", category: "insight", name: "一眼看穿", desc: "方向判断正确 25 次", test: (p) => (p.stats.directionCorrect || 0) >= 25 },
+  { id: "direction_100", category: "insight", name: "市场读心术", desc: "方向判断正确 100 次", test: (p) => (p.stats.directionCorrect || 0) >= 100 },
+  { id: "zero_trade_win", category: "insight", name: "不动也能赢", desc: "0 笔交易且方向判断正确", test: (p) => (p.stats.zeroTradeCorrect || 0) >= 1 },
+  { id: "zero_trade_5", category: "insight", name: "静观其变", desc: "0 笔交易且方向正确 5 次", test: (p) => (p.stats.zeroTradeCorrect || 0) >= 5 },
+
+  // ── 交易高手 ──────────────────────────────────
+  { id: "score_80", category: "skill", name: "冷静的一局", desc: "任意关卡达到 80 分", test: (p) => p.stats.bestScore >= 80 },
+  { id: "score_90", category: "skill", name: "神清气定", desc: "任意关卡达到 90 分", test: (p) => p.stats.bestScore >= 90 },
+  { id: "score_95", category: "skill", name: "几乎无噪音", desc: "任意关卡达到 95 分", test: (p) => p.stats.bestScore >= 95 },
+  { id: "score_100", category: "skill", name: "完美一局", desc: "任意关卡达到 100 分满分", test: (p) => p.stats.bestScore >= 100 },
+  { id: "multi_80plus_5", category: "skill", name: "高分段常客", desc: "累计 5 局达到 80 分以上", test: (p) => (p.stats.score80plus || 0) >= 5 },
+  { id: "multi_80plus_20", category: "skill", name: "稳定输出", desc: "累计 20 局达到 80 分以上", test: (p) => (p.stats.score80plus || 0) >= 20 },
+  { id: "multi_90plus_5", category: "skill", name: "精致交易", desc: "累计 5 局达到 90 分以上", test: (p) => (p.stats.score90plus || 0) >= 5 },
+  { id: "multi_90plus_15", category: "skill", name: "精益求精", desc: "累计 15 局达到 90 分以上", test: (p) => (p.stats.score90plus || 0) >= 15 },
+  { id: "score100_3", category: "skill", name: "三局封神", desc: "累计 3 局满分", test: (p) => (p.stats.score100 || 0) >= 3 },
+  { id: "avg_score_60", category: "skill", name: "及格线以上", desc: "完成 10 局且平均分 ≥ 60", test: (p) => p.stats.completed >= 10 && (p.stats.totalScore / p.stats.completed) >= 60 },
+  { id: "avg_score_75", category: "skill", name: "优等生", desc: "完成 20 局且平均分 ≥ 75", test: (p) => p.stats.completed >= 20 && (p.stats.totalScore / p.stats.completed) >= 75 },
+
+  // ── 风控铁壁 ──────────────────────────────────
+  { id: "seatbelt", category: "risk", name: "先系安全带", desc: "带止损完成 5 局", test: (p) => p.stats.stopUsed >= 5 },
+  { id: "seatbelt_15", category: "risk", name: "风控成习惯", desc: "带止损完成 15 局", test: (p) => p.stats.stopUsed >= 15 },
+  { id: "seatbelt_30", category: "risk", name: "止损圣徒", desc: "带止损完成 30 局", test: (p) => p.stats.stopUsed >= 30 },
+  { id: "seatbelt_80", category: "risk", name: "永远别裸奔", desc: "带止损完成 80 局", test: (p) => p.stats.stopUsed >= 80 },
+  { id: "seatbelt_all", category: "risk", name: "全副武装", desc: "最近 10 局全部带止损", test: (p) => (p.stats.stopUsedStreak || 0) >= 10 },
+  { id: "drawdown_low3", category: "risk", name: "稳如磐石", desc: "任意一局最大回撤 < 1% 且盈利", test: (p) => (p.stats.lowDrawdownWins || 0) >= 1 },
+  { id: "drawdown_low10", category: "risk", name: "波动免疫", desc: "累计 10 局最大回撤 < 2%", test: (p) => (p.stats.lowDrawdown || 0) >= 10 },
+
+  // ── 复盘修行 ──────────────────────────────────
+  { id: "reviewer", category: "review", name: "诚实复盘者", desc: "带复盘完成 5 局", test: (p) => p.stats.reviewed >= 5 },
+  { id: "reviewer_15", category: "review", name: "错题会发光", desc: "带复盘完成 15 局", test: (p) => p.stats.reviewed >= 15 },
+  { id: "reviewer_30", category: "review", name: "复盘成自然", desc: "带复盘完成 30 局", test: (p) => p.stats.reviewed >= 30 },
+  { id: "reviewer_80", category: "review", name: "不写不舒服", desc: "带复盘完成 80 局", test: (p) => p.stats.reviewed >= 80 },
+  { id: "reviewer_all10", category: "review", name: "每局都记", desc: "最近 10 局全部带复盘", test: (p) => (p.stats.reviewedStreak || 0) >= 10 },
+  { id: "note_100char", category: "review", name: "长篇大论", desc: "单局复盘笔记超过 100 字", test: (p) => (p.stats.longReview || 0) >= 1 },
+  { id: "note_200char", category: "review", name: "交易论文", desc: "单局复盘笔记超过 200 字", test: (p) => (p.stats.veryLongReview || 0) >= 1 },
+  { id: "tag_master", category: "review", name: "标签收集家", desc: "使用过全部 6 种复盘标签", test: (p) => new Set(p.stats.tagsUsed || []).size >= 6 },
+  { id: "bookmark_10", category: "review", name: "标注狂魔", desc: "单局添加 10 个以上标注", test: (p) => (p.stats.mostBookmarks || 0) >= 10 },
+
+  // ── 模式专家 ──────────────────────────────────
+  { id: "blind_10", category: "mode", name: "盲区行者", desc: "累计完成 10 局盲测快局", test: (p) => p.stats.blind >= 10 },
+  { id: "blind_25", category: "mode", name: "盲区老手", desc: "累计完成 25 局盲测快局", test: (p) => p.stats.blind >= 25 },
+  { id: "blind_50", category: "mode", name: "盲区领主", desc: "累计完成 50 局盲测快局", test: (p) => p.stats.blind >= 50 },
+  { id: "trend_10", category: "mode", name: "顺势雷达", desc: "累计完成 10 局趋势猎人", test: (p) => p.stats.trend >= 10 },
+  { id: "trend_25", category: "mode", name: "顺风船长", desc: "累计完成 25 局趋势猎人", test: (p) => p.stats.trend >= 25 },
+  { id: "trend_50", category: "mode", name: "趋势之王", desc: "累计完成 50 局趋势猎人", test: (p) => p.stats.trend >= 50 },
+  { id: "trap_10", category: "mode", name: "假突破拆解员", desc: "累计完成 10 局假突破", test: (p) => p.stats.trap >= 10 },
+  { id: "trap_25", category: "mode", name: "陷阱猎人", desc: "累计完成 25 局假突破", test: (p) => p.stats.trap >= 25 },
+  { id: "trap_50", category: "mode", name: "假突破免疫", desc: "累计完成 50 局假突破", test: (p) => p.stats.trap >= 50 },
+  { id: "survival_10", category: "mode", name: "波动防线", desc: "累计完成 10 局暴跌生存", test: (p) => p.stats.survival >= 10 },
+  { id: "survival_25", category: "mode", name: "风暴幸存者", desc: "累计完成 25 局暴跌生存", test: (p) => p.stats.survival >= 25 },
+  { id: "survival_50", category: "mode", name: "不死之身", desc: "累计完成 50 局暴跌生存", test: (p) => p.stats.survival >= 50 },
+  { id: "revenge_10", category: "mode", name: "复仇清单", desc: "累计完成 10 局错题复仇", test: (p) => p.stats.revenge >= 10 },
+  { id: "revenge_25", category: "mode", name: "错题消灭者", desc: "累计完成 25 局错题复仇", test: (p) => p.stats.revenge >= 25 },
+  { id: "revenge_50", category: "mode", name: "无怨无悔", desc: "累计完成 50 局错题复仇", test: (p) => p.stats.revenge >= 50 },
+  { id: "all_modes_5", category: "mode", name: "五味俱全", desc: "五种模式各完成 5 局", test: (p) => p.stats.blind >= 5 && p.stats.trend >= 5 && p.stats.trap >= 5 && p.stats.survival >= 5 && p.stats.revenge >= 5 },
+  { id: "all_modes_25", category: "mode", name: "全能战神", desc: "五种模式各完成 25 局", test: (p) => p.stats.blind >= 25 && p.stats.trend >= 25 && p.stats.trap >= 25 && p.stats.survival >= 25 && p.stats.revenge >= 25 },
+
+  // ── 闯关达人 ──────────────────────────────────
+  { id: "level_clear_1", category: "level", name: "第一关通过", desc: "历史闯关通过 1 关", test: (p) => levelModeStats(p).cleared >= 1 },
+  { id: "level_clear_10", category: "level", name: "十日远征", desc: "历史闯关通过 10 关", test: (p) => levelModeStats(p).cleared >= 10 },
+  { id: "level_clear_50", category: "level", name: "五十关巡礼", desc: "历史闯关通过 50 关", test: (p) => levelModeStats(p).cleared >= 50 },
+  { id: "level_clear_100", category: "level", name: "百关征服", desc: "历史闯关通过 100 关", test: (p) => levelModeStats(p).cleared >= 100 },
+  { id: "level_clear_300", category: "level", name: "三百关老兵", desc: "历史闯关通过 300 关", test: (p) => levelModeStats(p).cleared >= 300 },
+  { id: "level_stars_25", category: "level", name: "星光初聚", desc: "历史闯关累计获得 25 星", test: (p) => levelModeStats(p).stars >= 25 },
+  { id: "level_stars_100", category: "level", name: "百星图鉴", desc: "历史闯关累计获得 100 星", test: (p) => levelModeStats(p).stars >= 100 },
+  { id: "level_stars_250", category: "level", name: "星河灿烂", desc: "历史闯关累计获得 250 星", test: (p) => levelModeStats(p).stars >= 250 },
+  { id: "level_stars_500", category: "level", name: "五星满堂", desc: "历史闯关累计获得 500 星", test: (p) => levelModeStats(p).stars >= 500 },
+  { id: "level_five_star", category: "level", name: "五星日线", desc: "任意历史关卡获得 5 星", test: (p) => levelModeStats(p).fiveStars >= 1 },
+  { id: "level_five_star_5", category: "level", name: "五星专业户", desc: "5 个不同关卡获得 5 星", test: (p) => levelModeStats(p).fiveStars >= 5 },
+  { id: "level_five_star_20", category: "level", name: "满星收割机", desc: "20 个不同关卡获得 5 星", test: (p) => levelModeStats(p).fiveStars >= 20 },
+  { id: "level_retry_5", category: "level", name: "不服再来", desc: "同一历史关卡累计挑战 5 次", test: (p) => levelModeStats(p).maxAttempts >= 5 },
+  { id: "level_retry_15", category: "level", name: "死磕到底", desc: "同一历史关卡累计挑战 15 次", test: (p) => levelModeStats(p).maxAttempts >= 15 },
+
+  // ── 角色之缘 ──────────────────────────────────
+  { id: "character_lv5", category: "character", name: "开始培养", desc: "任意角色达到 Lv.5", test: (p) => Object.values(p.characters || {}).some((c) => characterLevelFromXp(c.xp, c.stage) >= 5) },
+  { id: "character_lv10", category: "character", name: "默契成形", desc: "任意角色达到 Lv.10", test: (p) => Object.values(p.characters || {}).some((c) => characterLevelFromXp(c.xp, c.stage) >= 10) },
+  { id: "character_lv15", category: "character", name: "灵魂羁绊", desc: "任意角色达到 Lv.15", test: (p) => Object.values(p.characters || {}).some((c) => characterLevelFromXp(c.xp, c.stage) >= 15) },
+  { id: "character_lv20", category: "character", name: "满级挚友", desc: "任意角色达到 Lv.20（满级）", test: (p) => Object.values(p.characters || {}).some((c) => characterLevelFromXp(c.xp, c.stage) >= 20) },
+  { id: "ascended_once", category: "character", name: "第一次进阶", desc: "任意角色升到二阶", test: (p) => Object.values(p.characters || {}).some((c) => c.stage >= 2) },
+  { id: "ascended_twice", category: "character", name: "二阶跃迁", desc: "任意角色升到三阶", test: (p) => Object.values(p.characters || {}).some((c) => c.stage >= 3) },
+  { id: "ascended_final", category: "character", name: "终阶觉醒", desc: "任意角色升到终阶（五阶）", test: (p) => Object.values(p.characters || {}).some((c) => c.stage >= 5) },
+  { id: "materials_5", category: "character", name: "材料收藏家", desc: "任意角色持有 5 个进阶材料", test: (p) => Object.values(p.characters || {}).some((c) => c.materials >= 5) },
+  { id: "materials_30", category: "character", name: "材料囤积癖", desc: "任意角色持有 30 个进阶材料", test: (p) => Object.values(p.characters || {}).some((c) => c.materials >= 30) },
+  { id: "two_char_lv10", category: "character", name: "双人成行", desc: "两个不同角色达到 Lv.10", test: (p) => Object.values(p.characters || {}).filter((c) => characterLevelFromXp(c.xp, c.stage) >= 10).length >= 2 },
+  { id: "all_char_lv5", category: "character", name: "全员起步", desc: "全部 7 个角色达到 Lv.5", test: (p) => Object.values(p.characters || {}).filter((c) => characterLevelFromXp(c.xp, c.stage) >= 5).length >= 7 },
+  { id: "all_char_lv10", category: "character", name: "全员精锐", desc: "全部 7 个角色达到 Lv.10", test: (p) => Object.values(p.characters || {}).filter((c) => characterLevelFromXp(c.xp, c.stage) >= 10).length >= 7 },
+
+  // ── 趣味挑战 ──────────────────────────────────
+  { id: "full_send", category: "fun", name: "全仓猛男", desc: "单笔开仓达到 100% 权益并盈利", test: (p) => (p.stats.fullSendWins || 0) >= 1 },
+  { id: "micro_trader", category: "fun", name: "微操达人", desc: "单笔开仓 ≤ 10% 权益并盈利", test: (p) => (p.stats.microWins || 0) >= 1 },
+  { id: "opposite_win", category: "fun", name: "反着来也能赚", desc: "方向判断错误但仍盈利", test: (p) => (p.stats.oppositeWins || 0) >= 1 },
+  { id: "triple_trade", category: "fun", name: "黄金三笔", desc: "单局正好交易 3 笔且盈利", test: (p) => (p.stats.tripleTradeWins || 0) >= 1 },
+  { id: "one_trade_win", category: "fun", name: "一剑封喉", desc: "单局只做 1 笔交易且盈利", test: (p) => (p.stats.oneTradeWins || 0) >= 1 },
+  { id: "no_trade_80", category: "fun", name: "佛系高分", desc: "0 笔交易获得 80 分以上", test: (p) => (p.stats.zeroTradeHighScore || 0) >= 1 },
+  { id: "speed_3min", category: "fun", name: "快枪手", desc: "3 分钟内完成一局训练", test: (p) => (p.stats.quickGames || 0) >= 1 },
+  { id: "speed_1min", category: "fun", name: "闪电侠", desc: "1 分钟内完成一局训练", test: (p) => (p.stats.ultraQuickGames || 0) >= 1 },
+  { id: "trader_20", category: "fun", name: "交易狂魔", desc: "单局超过 20 笔交易", test: (p) => (p.stats.mostTrades || 0) >= 20 },
+  { id: "trader_50", category: "fun", name: "高频交易员", desc: "单局超过 50 笔交易", test: (p) => (p.stats.mostTrades || 0) >= 50 },
+  { id: "buy_bottom", category: "fun", name: "抄底圣手", desc: "在当日最低点附近买入并盈利", test: (p) => (p.stats.nearBottomBuy || 0) >= 1 },
+  { id: "sell_top", category: "fun", name: "逃顶天王", desc: "在当日最高点附近卖出并盈利", test: (p) => (p.stats.nearTopSell || 0) >= 1 },
+
+  // ── 传奇之路 ──────────────────────────────────
+  { id: "total_xp_5000", category: "legend", name: "经验老手", desc: "累计获得 5000 XP", test: (p) => p.xp >= 5000 },
+  { id: "total_xp_20000", category: "legend", name: "修行大师", desc: "累计获得 20000 XP", test: (p) => p.xp >= 20000 },
+  { id: "total_xp_50000", category: "legend", name: "盘感永存", desc: "累计获得 50000 XP", test: (p) => p.xp >= 50000 },
+  { id: "total_xp_100000", category: "legend", name: "交易之魂", desc: "累计获得 100000 XP", test: (p) => p.xp >= 100000 },
+  { id: "all_modes_50", category: "legend", name: "众神之王", desc: "五种模式各完成 50 局", test: (p) => p.stats.blind >= 50 && p.stats.trend >= 50 && p.stats.trap >= 50 && p.stats.survival >= 50 && p.stats.revenge >= 50 },
+  { id: "level_stars_1000", category: "legend", name: "千星圣殿", desc: "历史闯关累计获得 1000 星", test: (p) => levelModeStats(p).stars >= 1000 },
+  { id: "completed_2000", category: "legend", name: "一生之约", desc: "累计完成 2000 局训练", test: (p) => p.stats.completed >= 2000 },
+  { id: "achievement_50", category: "legend", name: "成就猎人", desc: "解锁 50 个成就", test: (p) => p.achievements.length >= 50 },
+  { id: "achievement_80", category: "legend", name: "成就收集狂", desc: "解锁 80 个成就", test: (p) => p.achievements.length >= 80 },
+  { id: "achievement_all", category: "legend", name: "全成就制霸", desc: "解锁除本成就外的全部成就", test: (p) => p.achievements.length >= ACHIEVEMENTS.length - 1 },
+];
+
+function achievementCategory(id) {
+  return CATEGORY_MAP[id] || CATEGORY_MAP.beginner;
+}

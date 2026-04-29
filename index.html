@@ -365,21 +365,33 @@
     </div>
 
     <div class="modal-backdrop" id="settlementModal">
-      <div class="modal">
-        <div class="panel-title-row">
-          <h2 id="settlementTitle">本局结算</h2>
-          <button id="closeSettlementBtn" type="button">关闭</button>
-        </div>
-        <div class="score-ring">
-          <strong id="settlementScore">0</strong>
-          <span>分</span>
-        </div>
-        <div id="settlementBreakdown" class="settlement-breakdown"></div>
-        <div id="settlementRewards" class="achievement-list"></div>
-        <div class="button-row">
-          <button id="nextChallengeBtn" type="button">再来一局</button>
-          <button id="reviewMistakeBtn" type="button">错题复仇</button>
-        </div>
+      <div class="modal settlement-modal">
+        <section class="settlement-main">
+          <div class="panel-title-row">
+            <h2 id="settlementTitle">本局结算</h2>
+            <button id="closeSettlementBtn" type="button">关闭</button>
+          </div>
+          <div class="score-ring">
+            <strong id="settlementScore">0</strong>
+            <span>分</span>
+          </div>
+          <div id="settlementBreakdown" class="settlement-breakdown"></div>
+          <div id="settlementRewards" class="achievement-list"></div>
+          <div class="button-row">
+            <button id="nextChallengeBtn" type="button">再来一局</button>
+            <button id="reviewMistakeBtn" type="button">错题复仇</button>
+          </div>
+        </section>
+        <aside class="settlement-review-panel">
+          <div class="review-character-head">
+            <img id="settlementReviewPortrait" src="./character/乐观女孩.png" alt="复盘角色" />
+            <div>
+              <strong id="settlementReviewTitle">角色点评</strong>
+              <span id="settlementReviewStatus">结算后会自动生成。</span>
+            </div>
+          </div>
+          <div id="settlementReviewText" class="review-character-text">正在准备本局交易记录、评分和复盘笔记。</div>
+        </aside>
       </div>
     </div>
 

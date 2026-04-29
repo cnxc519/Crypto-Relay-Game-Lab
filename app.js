@@ -393,6 +393,10 @@ const els = {
   settlementScore: $("settlementScore"),
   settlementBreakdown: $("settlementBreakdown"),
   settlementRewards: $("settlementRewards"),
+  settlementReviewPortrait: $("settlementReviewPortrait"),
+  settlementReviewTitle: $("settlementReviewTitle"),
+  settlementReviewStatus: $("settlementReviewStatus"),
+  settlementReviewText: $("settlementReviewText"),
   nextChallengeBtn: $("nextChallengeBtn"),
   reviewMistakeBtn: $("reviewMistakeBtn"),
   closeSettlementBtn: $("closeSettlementBtn"),
@@ -446,6 +450,11 @@ const state = {
     lastGameAccount: null,
     lastCharacterGain: null,
     lastLevelRecord: null,
+    settlementReview: {
+      settlementId: "",
+      isStreaming: false,
+      text: "",
+    },
     activeQuoteCharacterId: null,
     activeQuote: "",
     calendarYear: null,
@@ -3019,6 +3028,33 @@ function biasLabel(bias) {
   return { long: "看多", short: "看空", flat: "观望" }[bias] || "未选择";
 }
 
+function challengeTypeLabel(type) {
+  return CHALLENGE_TYPES[type]?.name || type || "训练";
+}
+
+function pickSettlementReviewerId(active) {
+  if (active?.characterId) return active.characterId;
+  const seed = `${active?.id || "settlement"}-${active?.type || "training"}-${active?.startTime || Date.now()}`;
+  const random = seededDailyRandom(seed);
+  return CHARACTER_CONFIG[Math.floor(random() * CHARACTER_CONFIG.length)]?.id || CHARACTER_CONFIG[0].id;
+}
+
+function settlementTradesForReport(trades) {
+  return trades.slice(-40).map((trade) => ({
+    time: formatTime(trade.time),
+    side: tradeSideLabel(trade),
+    price: Number(trade.price).toFixed(2),
+    qty: Number(trade.qty).toFixed(8),
+    reason: trade.reason || "",
+    tags: trade.tags || [],
+    stopPrice: trade.stopPrice ? Number(trade.stopPrice).toFixed(2) : "",
+    takePrice: trade.takePrice ? Number(trade.takePrice).toFixed(2) : "",
+    realizedPnl: Number.isFinite(trade.realizedPnl) ? Number(trade.realizedPnl).toFixed(2) : "",
+    r: Number.isFinite(trade.r) ? Number(trade.r).toFixed(2) : "",
+    auto: Boolean(trade.auto),
+  }));
+}
+
 function finishChallenge(reason = "manual") {
   const active = state.game.active;
   if (!active || state.game.settling) return;
@@ -3074,12 +3110,54 @@ function finishChallenge(reason = "manual") {
   state.blindMode = false;
   state.currentIndex = endIndex;
   centerOnCurrent(state.viewEnd - state.viewStart || 220);
+  const reviewerId = pickSettlementReviewerId(active);
+  const notes = els.sessionNotesInput.value.trim();
+  const tradeReason = els.tradeReasonInput.value.trim();
+  const settlementTags = selectedTags();
   state.game.lastSettlement = {
+    id: active.id,
     title: active.title,
+    type: active.type,
+    typeLabel: challengeTypeLabel(active.type),
+    trialKind: active.trialKind,
     score,
     earnedXp,
     newAchievements,
     levelStars,
+    reviewerId,
+    reviewerReason: active.characterId ? "角色试炼指定角色" : "自主挑战随机角色",
+    report: {
+      fileName: state.fileName,
+      timeframe: formatInterval(state.timeframeMs),
+      startTime: formatTime(active.startTime),
+      endTime: formatTime(endCandle.time),
+      startPrice: active.startPrice,
+      endPrice: endCandle.close,
+      bias: biasLabel(active.bias),
+      expected: biasLabel(expected),
+      movePct,
+      returnPct,
+      score,
+      levelStars,
+      equity: stats.equity,
+      pnl: stats.pnl,
+      winRate: stats.winRate,
+      maxDrawdown: stats.maxDrawdown,
+      sumR: stats.sumR,
+      tradeCount: trades.length,
+      hasStop,
+      reviewed: reviewText.length >= 12,
+      notes,
+      tradeReason,
+      tags: settlementTags,
+      bookmarks: state.bookmarks.map((mark) => ({
+        time: formatTime(mark.time),
+        price: mark.price,
+        text: mark.text || "",
+        tags: mark.tags || [],
+      })),
+      trades: settlementTradesForReport(trades),
+    },
     lines: [
       `你的判断：${biasLabel(active.bias)}，实际：${biasLabel(expected)}，涨跌幅 ${(movePct * 100).toFixed(2)}%`,
       `本局收益：${(returnPct * 100).toFixed(2)}%（游戏资金独立结算）`,
@@ -3746,9 +3824,142 @@ function renderCharacterPanel() {
   `;
 }
 
+function settlementReviewCharacter(settlement = state.game.lastSettlement) {
+  return characterById(settlement?.reviewerId || state.game.profile.activeCharacter);
+}
+
+function renderSettlementReview() {
+  const settlement = state.game.lastSettlement;
+  if (!settlement || !els.settlementReviewText) return;
+  const character = settlementReviewCharacter(settlement);
+  const review = state.game.settlementReview;
+  els.settlementReviewPortrait.src = characterImagePath(character);
+  els.settlementReviewTitle.textContent = `${character.name} 的角色点评`;
+  els.settlementReviewStatus.textContent = review.isStreaming
+    ? "正在阅读本局交易记录..."
+    : `${settlement.reviewerReason || "独立角色复盘"}，不会写入日常聊天。`;
+  els.settlementReviewText.textContent =
+    review.text ||
+    (review.isStreaming ? "正在整理点评..." : "结算后会自动生成点评；如果本地对话服务不可用，这里会显示原因。");
+}
+
+function settlementReviewMessages(settlement, character) {
+  const history = (state.chat.histories[character.id] || []).slice(-10).map((item) => ({
+    role: item.role === "user" ? "user" : "assistant",
+    content: item.content,
+  }));
+  const report = settlement.report || {};
+  const trades = report.trades?.length
+    ? report.trades
+        .map((trade, index) => {
+          const risk = [trade.stopPrice ? `SL ${trade.stopPrice}` : "", trade.takePrice ? `TP ${trade.takePrice}` : ""].filter(Boolean).join(" / ");
+          const result = [trade.realizedPnl ? `PnL ${trade.realizedPnl}` : "", trade.r ? `${trade.r}R` : ""].filter(Boolean).join(" / ");
+          const note = [trade.reason, ...(trade.tags || [])].filter(Boolean).join(" / ");
+          return `${index + 1}. ${trade.time} ${trade.side} @ ${trade.price} qty ${trade.qty}${risk ? ` (${risk})` : ""}${result ? ` -> ${result}` : ""}${trade.auto ? " [自动]" : ""}${note ? `；备注：${note}` : ""}`;
+        })
+        .join("\n")
+    : "本局没有交易。";
+  const bookmarks = report.bookmarks?.length
+    ? report.bookmarks.map((mark) => `- ${mark.time} $${priceFmt.format(mark.price)} ${mark.text || ""} ${(mark.tags || []).join(" / ")}`).join("\n")
+    : "无标注。";
+
+  return [
+    {
+      role: "system",
+      content: [
+        chatSystemPrompt(character),
+        "这是一次独立训练复盘，不要把这次回复写成日常聊天续篇，也不要要求玩家继续提供行情截图。",
+        "你可以参考前面的日常聊天来保持角色语气和熟悉感，但本次点评不会保存进聊天历史。",
+        "输出要像游戏结算后的角色点评：先给一句角色化总评，再指出 2-3 个具体做得好或需要修正的点，最后给下一局一个可执行训练目标。",
+      ].join("\n"),
+    },
+    ...history,
+    {
+      role: "user",
+      content: [
+        `请按「${character.name}」的人设点评这局训练。`,
+        "",
+        `训练标题：${settlement.title}`,
+        `训练类型：${settlement.typeLabel || challengeTypeLabel(settlement.type)}`,
+        `数据：${report.fileName || "-"} / ${report.timeframe || "-"}`,
+        `区间：${report.startTime || "-"} -> ${report.endTime || "-"}`,
+        `判断：${report.bias || "-"}；实际：${report.expected || "-"}；行情涨跌幅：${((report.movePct || 0) * 100).toFixed(2)}%`,
+        `评分：${settlement.score}/100${settlement.levelStars == null ? "" : `；关卡星级：${settlement.levelStars}/5`}`,
+        `收益：${((report.returnPct || 0) * 100).toFixed(2)}%；权益：$${money.format(report.equity || 0)}；PnL：${report.pnl >= 0 ? "+" : ""}$${money.format(report.pnl || 0)}`,
+        `最大回撤：${((report.maxDrawdown || 0) * 100).toFixed(1)}%；R 倍数：${Number.isFinite(report.sumR) ? report.sumR.toFixed(2) : "0.00"}R；交易数：${report.tradeCount || 0}`,
+        `是否带止损：${report.hasStop ? "是" : "否"}；是否有复盘文字：${report.reviewed ? "是" : "否"}`,
+        "",
+        `玩家交易理由：${report.tradeReason || "无"}`,
+        `玩家总复盘：${report.notes || "无"}`,
+        `勾选标签：${(report.tags || []).join(" / ") || "无"}`,
+        "",
+        "交易记录：",
+        trades,
+        "",
+        "标注：",
+        bookmarks,
+      ].join("\n"),
+    },
+  ];
+}
+
+async function requestSettlementCharacterReview(settlementId = state.game.lastSettlement?.id) {
+  const settlement = state.game.lastSettlement;
+  const review = state.game.settlementReview;
+  if (!settlement || settlement.id !== settlementId || review.isStreaming || review.text) return;
+  const character = settlementReviewCharacter(settlement);
+  review.isStreaming = true;
+  review.text = "";
+  renderSettlementReview();
+
+  try {
+    const response = await fetch("./api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        characterId: character.id,
+        messages: settlementReviewMessages(settlement, character),
+      }),
+    });
+    if (!response.ok || !response.body) {
+      let detail = "";
+      try {
+        detail = (await response.json()).error || "";
+      } catch {
+        detail = await response.text();
+      }
+      throw new Error(detail || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      review.text += decoder.decode(value, { stream: true });
+      els.settlementReviewText.textContent = review.text;
+    }
+    review.text += decoder.decode();
+    review.text = review.text.trim() || `${character.name} 这次没有说出完整点评。`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    review.text = `角色点评生成失败：${message}`;
+  } finally {
+    review.isStreaming = false;
+    renderSettlementReview();
+  }
+}
+
 function showSettlement() {
   const settlement = state.game.lastSettlement;
   if (!settlement) return;
+  if (state.game.settlementReview.settlementId !== settlement.id) {
+    state.game.settlementReview = {
+      settlementId: settlement.id,
+      isStreaming: false,
+      text: "",
+    };
+  }
   els.settlementTitle.textContent = `${settlement.title} 结算`;
   els.settlementScore.textContent = String(settlement.score);
   els.settlementBreakdown.innerHTML = settlement.lines
@@ -3774,7 +3985,9 @@ function showSettlement() {
     if (gain.ascended) rewards.push(`${gain.character.name} 进阶为 ${stageName(gain.afterStage)}`);
   }
   els.settlementRewards.innerHTML = rewards.map((line) => `<div class="reward-item">${escapeHtml(line)}</div>`).join("");
+  renderSettlementReview();
   els.settlementModal.classList.add("show");
+  window.setTimeout(() => requestSettlementCharacterReview(settlement.id), 0);
 }
 
 function closeSettlement() {

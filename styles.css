@@ -769,6 +769,94 @@ input[type="range"] {
   color: var(--text);
 }
 
+.modal.settlement-modal {
+  width: min(86vw, 1240px);
+  max-width: none;
+  max-height: min(680px, calc(100vh - 36px));
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: 16px;
+}
+
+.settlement-main {
+  min-width: 0;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.settlement-main .button-row,
+.settlement-main .achievement-list,
+.settlement-main .settlement-breakdown {
+  min-width: 0;
+}
+
+.settlement-main .score-line,
+.settlement-main .reward-item {
+  overflow-wrap: anywhere;
+}
+
+.settlement-review-panel {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(240, 185, 11, 0.36);
+  border-radius: 8px;
+  background: #0d131b;
+  padding: 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.review-character-head {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.review-character-head img {
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.review-character-head strong,
+.review-character-head span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.review-character-head span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.review-character-text {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #111923;
+  padding: 10px 11px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.58;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1247,6 +1335,18 @@ th {
   }
 }
 
+@media (max-width: 1120px) {
+  .modal.settlement-modal {
+    width: min(92vw, 760px);
+    overflow: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .settlement-review-panel {
+    min-height: 280px;
+  }
+}
+
 @media (max-width: 760px) {
   .topbar {
     align-items: stretch;
@@ -1285,11 +1385,12 @@ th {
   .level-summary,
   .level-row,
   .level-pager,
-  .daily-reward,
-  .calendar-controls,
-  .chat-stage,
-  .character-grid,
-  .achievement-all-list {
+    .daily-reward,
+    .calendar-controls,
+    .chat-stage,
+    .settlement-modal,
+    .character-grid,
+    .achievement-all-list {
     grid-template-columns: 1fr;
   }
 
