@@ -298,10 +298,15 @@ window.BtcReplay = window.BtcReplay || {};
     ].map(([id, category, name, desc, target, value]) => counterAchievement({ id, category, name, desc, target, value })),
 
     ...[
-      ["character_lv5", "character", "开始培养", "任意角色达到 Lv.5", 5],
-      ["character_lv10", "character", "默契成形", "任意角色达到 Lv.10", 10],
-      ["character_lv15", "character", "灵魂羁绊", "任意角色达到 Lv.15", 15],
-      ["character_lv20", "character", "满级挚友", "任意角色达到 Lv.20（满级）", 20],
+      ["character_lv10", "character", "初窥门径", "任意角色达到 Lv.10", 10],
+      ["character_lv25", "character", "略有小成", "任意角色达到 Lv.25", 25],
+      ["character_lv50", "character", "登堂入室", "任意角色达到 Lv.50", 50],
+      ["character_lv100", "character", "百级里程碑", "任意角色达到 Lv.100", 100],
+      ["character_lv200", "character", "一阶巅峰", "任意角色达到 Lv.200（一阶上限）", 200],
+      ["character_lv400", "character", "二阶跨越", "任意角色达到 Lv.400（二阶上限）", 400],
+      ["character_lv600", "character", "三阶大成", "任意角色达到 Lv.600（三阶上限）", 600],
+      ["character_lv800", "character", "四阶圆满", "任意角色达到 Lv.800（四阶上限）", 800],
+      ["character_lv1000", "character", "终阶封神", "任意角色达到 Lv.1000（满级）", 1000],
     ].map(([id, category, name, desc, target]) =>
       customAchievement({
         id,
@@ -315,7 +320,8 @@ window.BtcReplay = window.BtcReplay || {};
 
     ...[
       ["ascended_once", "character", "第一次进阶", "任意角色升到二阶", 2],
-      ["ascended_twice", "character", "二阶跃迁", "任意角色升到三阶", 3],
+      ["ascended_twice", "character", "三阶跃迁", "任意角色升到三阶", 3],
+      ["ascended_thrice", "character", "四阶升华", "任意角色升到四阶", 4],
       ["ascended_final", "character", "终阶觉醒", "任意角色升到终阶（五阶）", 5],
     ].map(([id, category, name, desc, target]) =>
       customAchievement({
@@ -329,8 +335,9 @@ window.BtcReplay = window.BtcReplay || {};
     ),
 
     ...[
-      ["materials_5", "character", "材料收藏家", "任意角色持有 5 个进阶材料", 5],
-      ["materials_30", "character", "材料囤积癖", "任意角色持有 30 个进阶材料", 30],
+      ["materials_12", "character", "材料收藏家", "任意角色持有 12 个进阶材料（够升二阶）", 12],
+      ["materials_48", "character", "材料囤积者", "任意角色持有 48 个进阶材料（够升三阶）", 48],
+      ["materials_120", "character", "材料大亨", "任意角色持有 120 个进阶材料（够全程进阶）", 120],
     ].map(([id, category, name, desc, target]) =>
       customAchievement({
         id,
@@ -343,9 +350,12 @@ window.BtcReplay = window.BtcReplay || {};
     ),
 
     ...[
-      ["two_char_lv10", "character", "双人成行", "两个不同角色达到 Lv.10", 2, 10],
-      ["all_char_lv5", "character", "全员起步", "全部 7 个角色达到 Lv.5", () => totalCharacters(), 5],
-      ["all_char_lv10", "character", "全员精锐", "全部 7 个角色达到 Lv.10", () => totalCharacters(), 10],
+      ["two_char_lv50", "character", "双人共进", "两个不同角色达到 Lv.50", 2, 50],
+      ["two_char_lv200", "character", "双星闪耀", "两个不同角色达到 Lv.200", 2, 200],
+      ["two_char_lv500", "character", "双雄并立", "两个不同角色达到 Lv.500", 2, 500],
+      ["all_char_lv25", "character", "全员起步", "全部角色达到 Lv.25", () => totalCharacters(), 25],
+      ["all_char_lv100", "character", "全员精锐", "全部角色达到 Lv.100", () => totalCharacters(), 100],
+      ["all_char_lv200", "character", "全员巅峰", "全部角色达到 Lv.200", () => totalCharacters(), 200],
     ].map(([id, category, name, desc, target, level]) =>
       customAchievement({
         id,

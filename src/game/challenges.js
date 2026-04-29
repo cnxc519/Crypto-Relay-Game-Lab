@@ -202,10 +202,7 @@ function challengeTypeLabel(type) {
 }
 
 function pickSettlementReviewerId(active) {
-  if (active?.characterId) return active.characterId;
-  const seed = `${active?.id || "settlement"}-${active?.type || "training"}-${active?.startTime || Date.now()}`;
-  const random = seededDailyRandom(seed);
-  return CHARACTER_CONFIG[Math.floor(random() * CHARACTER_CONFIG.length)]?.id || CHARACTER_CONFIG[0].id;
+  return state.game.profile.activeCharacter || CHARACTER_CONFIG[0].id;
 }
 
 function settlementTradesForReport(trades) {
@@ -379,7 +376,7 @@ function finishChallenge(reason = "manual") {
     newAchievements,
     levelStars,
     reviewerId,
-    reviewerReason: active.characterId ? "角色试炼指定角色" : "自主挑战随机角色",
+    reviewerReason: "当前选中角色",
     report: {
       fileName: state.fileName,
       timeframe: formatInterval(state.timeframeMs),
