@@ -95,6 +95,8 @@ const els = {
   closeLevelModalBtn: $("closeLevelModalBtn"),
   levelModeDailyBtn: $("levelModeDailyBtn"),
   levelModeWeeklyBtn: $("levelModeWeeklyBtn"),
+  levelModeGameDailyBtn: $("levelModeGameDailyBtn"),
+  levelModeGameWeeklyBtn: $("levelModeGameWeeklyBtn"),
   levelSummary: $("levelSummary"),
   prevLevelPageBtn: $("prevLevelPageBtn"),
   nextLevelPageBtn: $("nextLevelPageBtn"),

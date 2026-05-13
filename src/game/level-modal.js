@@ -20,6 +20,8 @@ function renderLevelModal() {
   const pageLevels = levels.slice(start, start + LEVELS_PER_PAGE);
   els.levelModeDailyBtn.classList.toggle("active", mode.id === "daily");
   els.levelModeWeeklyBtn.classList.toggle("active", mode.id === "weekly");
+  els.levelModeGameDailyBtn.classList.toggle("active", mode.id === "game_daily");
+  els.levelModeGameWeeklyBtn.classList.toggle("active", mode.id === "game_weekly");
   els.levelSummary.innerHTML = `
     <div><span>当前数据</span><strong>${escapeHtml(datasetInfo.label)}</strong></div>
     <div><span>通过关卡</span><strong>${stats.cleared}/${levels.length}</strong></div>

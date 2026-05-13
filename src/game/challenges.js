@@ -178,6 +178,89 @@ function startCharacterTrial(kind = "normal") {
   showToast(state.game.active.text);
 }
 
+function gameModeTrade(targetSide) {
+  const active = state.game.active;
+  if (!active?.gameMode || state.game.settling) return;
+  const current = positionSide();
+  if (targetSide === "buy") {
+    if (!active.bias) setChallengeBias("long");
+    if (current === "long") return;
+    if (current === "short") executeTrade("cover", 1, { skipCharacterRules: true });
+    executeTrade("buy", 1, { skipCharacterRules: true });
+  } else if (targetSide === "short") {
+    if (!active.bias) setChallengeBias("short");
+    if (current === "short") return;
+    if (current === "long") executeTrade("sell", 1, { skipCharacterRules: true });
+    executeTrade("short", 1, { skipCharacterRules: true });
+  }
+}
+
+function startGameLevelChallenge(levelIndex = null) {
+  if (!ensureLevelTimeframe()) return;
+  const mode = currentLevelSpanMode();
+  const levels = generateLevelList(mode);
+  if (!levels.length) {
+    showToast("没有生成可用关卡。请确认数据覆盖 2020 年之后且为 15m。");
+    return;
+  }
+  const targetIndex = levelIndex == null ? nextLevelIndex(levels) : clamp(levelIndex, 0, levels.length - 1);
+  const level = levels[targetIndex];
+  const startCandle = state.candles[level.startIndex];
+  const dataset = currentLevelDatasetInfo();
+  const bucketInfo = currentLevelBucketInfo(mode, dataset);
+
+  stopPlayback();
+  if (state.game.active && state.game.externalAccount) {
+    state.account = cloneAccount(state.game.externalAccount);
+    state.game.active = null;
+    state.game.externalAccount = null;
+  }
+  if (!state.game.externalAccount) {
+    state.game.externalAccount = cloneAccount(state.account);
+  }
+  const gameCash = Number(els.initialCashInput.value);
+  state.account = createAccount(Number.isFinite(gameCash) && gameCash > 0 ? gameCash : 10_000);
+  state.bookmarks = [];
+  state.annotations = [];
+  state.game.active = {
+    id: uniqueId("game"),
+    type: "level",
+    title: `${level.title}（${mode.label}）`,
+    text: "按 ↑ 做多 100%，按 ↓ 做空 100%，每按一次 K 线前进一格。",
+    startIndex: level.startIndex,
+    endIndex: level.endIndex,
+    startTime: startCandle.time,
+    startPrice: startCandle.close,
+    horizon: level.endIndex - level.startIndex,
+    xp: CHALLENGE_TYPES.level.xp,
+    bias: null,
+    trialKind: "level",
+    gameMode: true,
+    levelId: level.id,
+    levelIndex: level.index,
+    levelDatasetKey: bucketInfo.key,
+    levelDatasetLabel: bucketInfo.label,
+    levelBaseDatasetKey: dataset.key,
+    levelBaseDatasetLabel: dataset.label,
+    levelSpanModeId: mode.id,
+    levelSpanModeLabel: mode.label,
+    startedAt: Date.now(),
+    tradesAtStart: 0,
+    bookmarksAtStart: 0,
+  };
+  state.game.lastType = "level";
+  state.hideFuture = true;
+  state.blindMode = false;
+  state.dateRevealed = true;
+  els.sessionNameInput.value = state.game.active.title;
+  clearTradeDraftInputs();
+  els.bookmarkInput.value = "";
+  els.stopLossInput.value = "";
+  els.takeProfitInput.value = "";
+  revealTo(level.startIndex, true);
+  showToast(`↑ 做多 / ↓ 做空，每按一次 K 线前进一格。`);
+}
+
 function setChallengeBias(bias) {
   if (!state.game.active) {
     showToast("先开一局，再选择方向。");

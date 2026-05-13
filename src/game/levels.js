@@ -3,6 +3,8 @@
 const LEVEL_SPAN_MODES = Object.freeze({
   daily: { id: "daily", label: "1天一关", shortLabel: "1天", days: 1 },
   weekly: { id: "weekly", label: "7天一关", shortLabel: "7天", days: 7 },
+  game_daily: { id: "game_daily", label: "1天游戏", shortLabel: "1天游", days: 1, game: true },
+  game_weekly: { id: "game_weekly", label: "7天游戏", shortLabel: "7天游", days: 7, game: true },
 });
 const LEVEL_DAY_MS = 86_400_000;
 
@@ -214,6 +216,7 @@ function levelWindowLabel(startTime, endTimeExclusive, mode = currentLevelSpanMo
 }
 
 function levelChallengeText(mode = currentLevelSpanMode()) {
+  if (mode.game) return `↑ 做多 100% / ↓ 做空 100%，每按一次 K 线前进一格。`;
   return mode.id === "weekly"
     ? "从 2020 年开始，每 7 天是一关，更适合中长线持仓训练，目标是稳定拿星。"
     : "从 2020 年开始，每 1 天是一关，目标是稳定拿星。";

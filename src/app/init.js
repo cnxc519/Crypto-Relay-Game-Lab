@@ -124,6 +124,8 @@ function bindEvents() {
   els.levelListBtn.addEventListener("click", openLevelModal);
   els.levelModeDailyBtn.addEventListener("click", () => setLevelSpanMode("daily"));
   els.levelModeWeeklyBtn.addEventListener("click", () => setLevelSpanMode("weekly"));
+  els.levelModeGameDailyBtn.addEventListener("click", () => setLevelSpanMode("game_daily"));
+  els.levelModeGameWeeklyBtn.addEventListener("click", () => setLevelSpanMode("game_weekly"));
   els.prevLevelPageBtn.addEventListener("click", () => setLevelPage((Number(levelModeForDataset().page) || 0) - 1));
   els.nextLevelPageBtn.addEventListener("click", () => setLevelPage((Number(levelModeForDataset().page) || 0) + 1));
   els.levelPageSelect.addEventListener("change", () => setLevelPage(Number(els.levelPageSelect.value)));
@@ -131,7 +133,9 @@ function bindEvents() {
     const button = event.target.closest("[data-level-index]");
     if (!button) return;
     closeLevelModal();
-    startLevelChallenge(Number(button.dataset.levelIndex));
+    const mode = currentLevelSpanMode();
+    if (mode.game) startGameLevelChallenge(Number(button.dataset.levelIndex));
+    else startLevelChallenge(Number(button.dataset.levelIndex));
   });
   els.closeLevelModalBtn.addEventListener("click", closeLevelModal);
   els.levelModal.addEventListener("click", (event) => {
@@ -332,6 +336,21 @@ function bindEvents() {
   window.addEventListener("resize", render);
   window.addEventListener("keydown", (event) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
+    if (state.game.active?.gameMode && !state.game.settling) {
+      if (event.code === "ArrowUp") {
+        event.preventDefault();
+        gameModeTrade("buy");
+        stepBy(1);
+        return;
+      }
+      if (event.code === "ArrowDown") {
+        event.preventDefault();
+        gameModeTrade("short");
+        stepBy(1);
+        return;
+      }
+      return;
+    }
     if (event.code === "Space") {
       event.preventDefault();
       togglePlayback();
