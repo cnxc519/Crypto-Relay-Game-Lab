@@ -261,6 +261,225 @@ function startGameLevelChallenge(levelIndex = null) {
   showToast(`↑ 做多 / ↓ 做空，每按一次 K 线前进一格。`);
 }
 
+function startPrediction(levelIndex) {
+  if (!ensureLevelTimeframe()) return;
+  const mode = levelSpanModeById("prediction");
+  const levels = generateLevelList(mode);
+  if (!levels.length) {
+    showToast("没有生成可用关卡。请确认数据覆盖 2020 年之后且为 15m。");
+    return;
+  }
+  const targetIndex = clamp(levelIndex ?? 0, 0, levels.length - 1);
+  const level = levels[targetIndex];
+  state.game._prediction = {
+    level,
+    levelId: level.id,
+    levelIndex: level.index,
+    startTime: level.startTime,
+    endTime: level.endTime + 1,
+    startPrice: state.candles[level.startIndex].close,
+    endPrice: state.candles[Math.min(level.endIndex, state.candles.length - 1)].close,
+    movePct: (state.candles[Math.min(level.endIndex, state.candles.length - 1)].close - state.candles[level.startIndex].close) / state.candles[level.startIndex].close,
+  };
+
+  state.hideFuture = true;
+  state.blindMode = false;
+  state.dateRevealed = true;
+  state.currentIndex = level.startIndex;
+  centerOnCurrent(state.viewEnd - state.viewStart || 220);
+  syncTimeline();
+  render();
+
+  els.predictionTimeRange.textContent = level.title.replace(/^[^0-9]*/, "").replace(/ 第 \d+ 关$/, "");
+  els.predictionBody.style.display = "";
+  els.predictionResult.style.display = "none";
+  els.predictionReasonInput.value = "";
+  els.predictionOverlay.classList.add("show");
+  positionPredictionCard();
+  els.predictionUpBtn.focus();
+}
+
+function positionPredictionCard() {
+  const pos = state.game._predictionPos;
+  const card = els.predictionCard;
+  if (pos) {
+    card.style.position = "fixed";
+    card.style.left = pos.left + "px";
+    card.style.top = pos.top + "px";
+    card.style.transform = "none";
+  } else {
+    card.style.position = "";
+    card.style.left = "";
+    card.style.top = "";
+    card.style.transform = "";
+  }
+}
+
+function initPredictionDrag() {
+  const card = els.predictionCard;
+  const header = card.querySelector(".prediction-header");
+  if (!header) return;
+  let dragging = false, startX, startY, origLeft, origTop;
+
+  header.addEventListener("mousedown", (e) => {
+    if (e.target.tagName === "BUTTON") return;
+    dragging = true;
+    const rect = card.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    origLeft = rect.left;
+    origTop = rect.top;
+    card.style.position = "fixed";
+    card.style.left = origLeft + "px";
+    card.style.top = origTop + "px";
+    card.style.transform = "none";
+    card.style.cursor = "grabbing";
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    const left = origLeft + e.clientX - startX;
+    const top = origTop + e.clientY - startY;
+    card.style.left = left + "px";
+    card.style.top = top + "px";
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    card.style.cursor = "";
+    state.game._predictionPos = {
+      left: parseFloat(card.style.left) || 0,
+      top: parseFloat(card.style.top) || 0,
+    };
+  });
+}
+
+function submitPrediction(direction) {
+  const p = state.game._prediction;
+  if (!p) return;
+  const reason = els.predictionReasonInput.value.trim();
+  const correct = (direction === "up" && p.movePct > 0) || (direction === "down" && p.movePct < 0);
+  const stars = predictionStars(correct, p.movePct);
+
+  const mode = levelSpanModeById("prediction");
+  const dataset = currentLevelDatasetInfo();
+  const bucketInfo = currentLevelBucketInfo(mode, dataset);
+  const levelMode = levelModeForDataset(bucketInfo);
+  const records = levelMode.records;
+  const previous = records[p.levelId] || {
+    id: p.levelId,
+    index: p.levelIndex,
+    datasetKey: levelMode.key,
+    datasetLabel: levelMode.label,
+    baseDatasetKey: dataset.key,
+    spanModeId: "prediction",
+    attempts: 0,
+    bestStars: 0,
+    correct: false,
+    bestStreak: 0,
+  };
+  const attempts = (previous.attempts || 0) + 1;
+  const bestStars = Math.max(previous.bestStars || 0, stars);
+  const streak = previous._streak || 0;
+  const newStreak = correct ? streak + 1 : 0;
+  const bestStreak = Math.max(previous.bestStreak || 0, newStreak);
+  const record = {
+    ...previous,
+    attempts,
+    bestStars,
+    correct,
+    bestStreak,
+    _streak: newStreak,
+    lastCorrect: correct,
+    lastStars: stars,
+    lastDirection: direction,
+    lastReason: reason,
+    lastMovePct: p.movePct,
+    lastPlayedAt: Date.now(),
+    clearedAt: bestStars > 0 ? previous.clearedAt || Date.now() : previous.clearedAt || null,
+  };
+  records[p.levelId] = record;
+  levelMode.lastLevelId = p.levelId;
+  levelMode.updatedAt = Date.now();
+  saveGameProfile();
+
+  appendPredictionLog({
+    time: Date.now(),
+    levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \d+ 关$/, "")}`,
+    direction: direction === "up" ? "看涨" : "看跌",
+    reason,
+    correct,
+    movePct: p.movePct,
+    stars,
+  });
+
+  const pctStr = (p.movePct >= 0 ? "+" : "") + (p.movePct * 100).toFixed(2) + "%";
+  els.predictionMove.innerHTML = `BTC 涨跌 <strong class="${p.movePct >= 0 ? "text-green" : "text-red"}">${pctStr}</strong>`;
+  els.predictionOutcome.innerHTML = correct
+    ? `<span class="outcome-correct">预测正确！</span>`
+    : `<span class="outcome-wrong">预测错误</span>`;
+  els.predictionStarsDisplay.innerHTML = starsText(stars);
+  els.predictionReasonShown.innerHTML = reason ? `<span class="reason-label">你的理由：</span>${escapeHtml(reason)}` : "";
+  els.predictionBody.style.display = "none";
+  els.predictionResult.style.display = "";
+}
+
+function appendPredictionLog(entry) {
+  const stored = localStorage.getItem("btcReplayLab.predictionLog");
+  const log = stored ? JSON.parse(stored) : [];
+  log.unshift(entry);
+  if (log.length > 500) log.length = 500;
+  localStorage.setItem("btcReplayLab.predictionLog", JSON.stringify(log));
+}
+
+function renderPredictionLog() {
+  const stored = localStorage.getItem("btcReplayLab.predictionLog");
+  const log = stored ? JSON.parse(stored) : [];
+  if (!log.length) {
+    els.predictionLogList.innerHTML = '<div class="prediction-log-empty">暂无预测记录</div>';
+    return;
+  }
+  els.predictionLogList.innerHTML = log.map((entry, i) => {
+    const time = new Date(entry.time).toLocaleString("zh-CN", { hour12: false });
+    return `<div class="prediction-log-row">
+      <span class="log-index">#${log.length - i}</span>
+      <span class="log-time">${time}</span>
+      <span class="log-level">${escapeHtml(entry.levelTitle || "")}</span>
+      <span class="log-dir ${entry.direction === "看涨" ? "dir-up" : "dir-down"}">${entry.direction}</span>
+      ${entry.reason ? `<span class="log-reason">${escapeHtml(entry.reason)}</span>` : '<span class="log-reason muted">-</span>'}
+      <span class="log-pct ${entry.movePct >= 0 ? "text-green" : "text-red"}">${(entry.movePct >= 0 ? "+" : "") + (entry.movePct * 100).toFixed(2)}%</span>
+      <span class="log-result ${entry.correct ? "text-green" : "text-red"}">${entry.correct ? "正确" : "错误"}</span>
+      <span class="log-stars">${"★".repeat(entry.stars)}${"☆".repeat(5 - entry.stars)}</span>
+    </div>`;
+  }).join("");
+}
+
+function randomPrediction() {
+  const level = pickRandomPredictionLevel();
+  if (!level) {
+    showToast("请先加载数据。");
+    return;
+  }
+  startPrediction(level.index);
+}
+
+function retryPrediction() {
+  const p = state.game._prediction;
+  if (!p) return;
+  startPrediction(p.levelIndex);
+}
+
+function nextRandomPrediction() {
+  randomPrediction();
+}
+
+function closePrediction() {
+  els.predictionOverlay.classList.remove("show");
+  state.game._prediction = null;
+}
+
 function setChallengeBias(bias) {
   if (!state.game.active) {
     showToast("先开一局，再选择方向。");

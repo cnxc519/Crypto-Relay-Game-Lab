@@ -126,6 +126,7 @@ function bindEvents() {
   els.levelModeWeeklyBtn.addEventListener("click", () => setLevelSpanMode("weekly"));
   els.levelModeGameDailyBtn.addEventListener("click", () => setLevelSpanMode("game_daily"));
   els.levelModeGameWeeklyBtn.addEventListener("click", () => setLevelSpanMode("game_weekly"));
+  els.levelModePredictionBtn.addEventListener("click", () => setLevelSpanMode("prediction"));
   els.prevLevelPageBtn.addEventListener("click", () => setLevelPage((Number(levelModeForDataset().page) || 0) - 1));
   els.nextLevelPageBtn.addEventListener("click", () => setLevelPage((Number(levelModeForDataset().page) || 0) + 1));
   els.levelPageSelect.addEventListener("change", () => setLevelPage(Number(els.levelPageSelect.value)));
@@ -134,12 +135,35 @@ function bindEvents() {
     if (!button) return;
     closeLevelModal();
     const mode = currentLevelSpanMode();
-    if (mode.game) startGameLevelChallenge(Number(button.dataset.levelIndex));
+    if (mode.prediction) startPrediction(Number(button.dataset.levelIndex));
+    else if (mode.game) startGameLevelChallenge(Number(button.dataset.levelIndex));
     else startLevelChallenge(Number(button.dataset.levelIndex));
   });
   els.closeLevelModalBtn.addEventListener("click", closeLevelModal);
   els.levelModal.addEventListener("click", (event) => {
     if (event.target === els.levelModal) closeLevelModal();
+    const randBtn = event.target.closest("#levelRandomTestBtn");
+    if (randBtn) {
+      closeLevelModal();
+      randomPrediction();
+    }
+    const logBtn = event.target.closest("#predictionLogOpenBtn");
+    if (logBtn) {
+      renderPredictionLog();
+      els.predictionLogModal.classList.add("show");
+    }
+  });
+  els.predictionUpBtn.addEventListener("click", () => submitPrediction("up"));
+  els.predictionDownBtn.addEventListener("click", () => submitPrediction("down"));
+  els.predictionRandomNextBtn.addEventListener("click", nextRandomPrediction);
+  els.predictionRetryBtn.addEventListener("click", retryPrediction);
+  els.predictionOverlay.addEventListener("click", (event) => {
+    if (event.target === els.predictionOverlay) closePrediction();
+  });
+  initPredictionDrag();
+  els.closePredictionLogBtn.addEventListener("click", () => els.predictionLogModal.classList.remove("show"));
+  els.predictionLogModal.addEventListener("click", (event) => {
+    if (event.target === els.predictionLogModal) els.predictionLogModal.classList.remove("show");
   });
   els.settleGameBtn.addEventListener("click", () => finishChallenge("manual"));
   els.dailyTaskHudBtn.addEventListener("click", openDailyTaskModal);
@@ -336,6 +360,34 @@ function bindEvents() {
   window.addEventListener("resize", render);
   window.addEventListener("keydown", (event) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
+    if (els.predictionOverlay.classList.contains("show")) {
+      const isInput = event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement;
+      if (event.code === "ArrowUp" || event.code === "ArrowDown") {
+        event.preventDefault();
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        if (els.predictionBody.style.display !== "none") {
+          submitPrediction(event.code === "ArrowUp" ? "up" : "down");
+        }
+        return;
+      }
+      if (event.code === "Space") {
+        event.preventDefault();
+        if (els.predictionResult.style.display !== "none") nextRandomPrediction();
+        return;
+      }
+      if (event.code === "Tab") {
+        event.preventDefault();
+        if (els.predictionResult.style.display !== "none") retryPrediction();
+        return;
+      }
+      if (event.code === "Escape") {
+        event.preventDefault();
+        closePrediction();
+        return;
+      }
+      if (isInput) return;
+      return;
+    }
     if (state.game.active?.gameMode && !state.game.settling) {
       if (event.code === "ArrowUp") {
         event.preventDefault();

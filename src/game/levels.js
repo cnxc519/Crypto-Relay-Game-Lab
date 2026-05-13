@@ -5,6 +5,7 @@ const LEVEL_SPAN_MODES = Object.freeze({
   weekly: { id: "weekly", label: "7天一关", shortLabel: "7天", days: 7 },
   game_daily: { id: "game_daily", label: "1天游戏", shortLabel: "1天游", days: 1, game: true },
   game_weekly: { id: "game_weekly", label: "7天游戏", shortLabel: "7天游", days: 7, game: true },
+  prediction: { id: "prediction", label: "超级预测", shortLabel: "预测", days: 0.5, game: true, prediction: true },
 });
 const LEVEL_DAY_MS = 86_400_000;
 
@@ -210,6 +211,12 @@ function levelCandlesForMode(mode = currentLevelSpanMode()) {
 }
 
 function levelWindowLabel(startTime, endTimeExclusive, mode = currentLevelSpanMode()) {
+  if (mode.days < 1) {
+    const start = new Date(startTime);
+    const end = new Date(endTimeExclusive - 1);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${start.getUTCFullYear()}-${pad(start.getUTCMonth() + 1)}-${pad(start.getUTCDate())} ${pad(start.getUTCHours())}:00~${pad(end.getUTCHours())}:59`;
+  }
   const startKey = levelDateKey(startTime);
   if (mode.days <= 1) return startKey;
   return `${startKey} ~ ${levelDateKey(endTimeExclusive - 1)}`;
@@ -235,7 +242,11 @@ function generateLevelList(mode = currentLevelSpanMode()) {
     if (!state.candles[startIndex] || !state.candles[endIndex]) continue;
     if (state.candles[startIndex].time >= dayEnd || state.candles[endIndex].time >= dayEnd) continue;
     const rangeLabel = levelWindowLabel(dayStart, dayEnd, mode);
-    const id = mode.days <= 1 ? levelDateKey(dayStart) : `${levelDateKey(dayStart)}_${levelDateKey(dayEnd - 1)}`;
+    const id = mode.days < 1
+      ? `${levelDateKey(dayStart)}T${String(new Date(dayStart).getUTCHours()).padStart(2, "0")}`
+      : mode.days <= 1
+        ? levelDateKey(dayStart)
+        : `${levelDateKey(dayStart)}_${levelDateKey(dayEnd - 1)}`;
     levels.push({
       id,
       index: levels.length,
@@ -247,6 +258,25 @@ function generateLevelList(mode = currentLevelSpanMode()) {
     });
   }
   return levels;
+}
+
+function pickRandomPredictionLevel() {
+  const mode = levelSpanModeById("prediction");
+  const levels = generateLevelList(mode);
+  if (!levels.length) return null;
+  return levels[Math.floor(Math.random() * levels.length)];
+}
+
+function predictionStars(correct, movePct) {
+  const abs = Math.abs(movePct || 0);
+  if (correct) {
+    if (abs > 0.03) return 5;
+    if (abs > 0.01) return 4;
+    return 3;
+  }
+  if (abs < 0.01) return 2;
+  if (abs < 0.03) return 1;
+  return 0;
 }
 
 function levelStarsFromResult(score, returnPct) {

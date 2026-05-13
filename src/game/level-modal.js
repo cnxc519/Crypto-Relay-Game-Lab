@@ -22,13 +22,30 @@ function renderLevelModal() {
   els.levelModeWeeklyBtn.classList.toggle("active", mode.id === "weekly");
   els.levelModeGameDailyBtn.classList.toggle("active", mode.id === "game_daily");
   els.levelModeGameWeeklyBtn.classList.toggle("active", mode.id === "game_weekly");
-  els.levelSummary.innerHTML = `
-    <div><span>当前数据</span><strong>${escapeHtml(datasetInfo.label)}</strong></div>
-    <div><span>通过关卡</span><strong>${stats.cleared}/${levels.length}</strong></div>
-    <div><span>累计星数</span><strong>${stats.stars}</strong></div>
-    <div><span>总挑战</span><strong>${stats.attempts}</strong></div>
-    <div><span>最佳收益</span><strong>${(stats.bestReturn * 100).toFixed(2)}%</strong></div>
-  `;
+  els.levelModePredictionBtn.classList.toggle("active", mode.id === "prediction");
+  if (mode.prediction) {
+    const correctCount = levels.reduce((sum, lv) => sum + ((records[lv.id] || {}).correct ? 1 : 0), 0);
+    const attemptedCount = levels.filter((lv) => (records[lv.id] || {}).attempts > 0).length;
+    const rate = attemptedCount > 0 ? ((correctCount / attemptedCount) * 100).toFixed(1) : "-";
+    const streak = levels.reduce((max, lv) => Math.max(max, (records[lv.id] || {}).bestStreak || 0), 0);
+    els.levelSummary.innerHTML = `
+      <div><span>总预测</span><strong>${stats.attempts}</strong></div>
+      <div><span>正确率</span><strong>${rate === "-" ? "-" : rate + "%"}</strong></div>
+      <div><span>最佳连胜</span><strong>${streak}</strong></div>
+      <div class="level-summary-action">
+        <button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button>
+        <button id="predictionLogOpenBtn" type="button" class="random-test-btn">预测记录</button>
+      </div>
+    `;
+  } else {
+    els.levelSummary.innerHTML = `
+      <div><span>当前数据</span><strong>${escapeHtml(datasetInfo.label)}</strong></div>
+      <div><span>通过关卡</span><strong>${stats.cleared}/${levels.length}</strong></div>
+      <div><span>累计星数</span><strong>${stats.stars}</strong></div>
+      <div><span>总挑战</span><strong>${stats.attempts}</strong></div>
+      <div><span>最佳收益</span><strong>${(stats.bestReturn * 100).toFixed(2)}%</strong></div>
+    `;
+  }
   if (!levels.length) {
     els.levelRows.innerHTML = `<div class="level-row"><div><strong>暂无关卡</strong><span>请导入覆盖 2020 年后的 15m 数据，当前模式为 ${escapeHtml(mode.label)}。</span></div></div>`;
     els.levelPageSelect.innerHTML = '<option value="0">第 1 / 1 页</option>';

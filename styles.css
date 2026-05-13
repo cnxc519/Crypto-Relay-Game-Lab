@@ -1598,6 +1598,318 @@ th {
   }
 }
 
+/* ========== Level Summary Random Test Button ========== */
+
+.level-summary-action {
+  display: flex;
+  align-items: center;
+}
+
+.random-test-btn {
+  min-height: 36px !important;
+  padding: 0 20px !important;
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+  background: rgba(240, 185, 11, 0.1) !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  letter-spacing: 0.04em !important;
+}
+
+.random-test-btn:hover {
+  background: rgba(240, 185, 11, 0.22) !important;
+  box-shadow: 0 0 18px rgba(240, 185, 11, 0.18) !important;
+}
+
+.level-summary-action {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========== Prediction Log ========== */
+
+.prediction-log-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prediction-log-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.prediction-log-row {
+  display: grid;
+  grid-template-columns: 40px 130px 170px 42px 1fr 64px 42px 68px;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+}
+
+.prediction-log-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--line);
+}
+
+.prediction-log-row .log-index {
+  color: var(--muted);
+  text-align: right;
+}
+
+.prediction-log-row .log-time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.prediction-log-row .log-level {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prediction-log-row .log-dir {
+  font-weight: 700;
+  text-align: center;
+}
+
+.prediction-log-row .dir-up { color: var(--green); }
+.prediction-log-row .dir-down { color: var(--red); }
+
+.prediction-log-row .log-reason {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.prediction-log-row .log-reason.muted { opacity: 0.4; }
+
+.prediction-log-row .log-pct { font-weight: 600; text-align: right; }
+.prediction-log-row .log-result { font-weight: 600; text-align: center; }
+
+.prediction-log-row .log-stars {
+  color: var(--gold);
+  letter-spacing: 1px;
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ========== Prediction Overlay ========== */
+
+.prediction-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 8, 14, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.prediction-overlay.show {
+  display: flex;
+}
+
+.prediction-card {
+  width: min(420px, calc(100vw - 48px));
+  background: linear-gradient(145deg, #141c28 0%, #182230 50%, #141c28 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 16px;
+  padding: 28px 26px 22px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.08);
+  animation: predictionIn 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.prediction-header {
+  text-align: center;
+  margin-bottom: 22px;
+  cursor: grab;
+  user-select: none;
+}
+
+.prediction-header strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--blue);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.prediction-header span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.prediction-hint {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.prediction-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.prediction-buttons button {
+  min-height: 52px !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  letter-spacing: 0.05em !important;
+  transition: all 0.18s ease !important;
+}
+
+.prediction-up {
+  border-color: rgba(24, 185, 130, 0.55) !important;
+  color: #d8fff1 !important;
+  background: rgba(24, 185, 130, 0.14) !important;
+}
+
+.prediction-up:hover {
+  background: rgba(24, 185, 130, 0.28) !important;
+  border-color: #18b982 !important;
+  box-shadow: 0 0 22px rgba(24, 185, 130, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.prediction-down {
+  border-color: rgba(239, 83, 80, 0.55) !important;
+  color: #ffe3e1 !important;
+  background: rgba(239, 83, 80, 0.14) !important;
+}
+
+.prediction-down:hover {
+  background: rgba(239, 83, 80, 0.28) !important;
+  border-color: #ef5350 !important;
+  box-shadow: 0 0 22px rgba(239, 83, 80, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.prediction-reason {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.prediction-reason::placeholder {
+  color: var(--muted);
+}
+
+.prediction-reason:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+/* ---- Result ---- */
+
+.prediction-result {
+  text-align: center;
+}
+
+.prediction-move {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.prediction-move .text-green {
+  color: var(--green);
+}
+
+.prediction-move .text-red {
+  color: var(--red);
+}
+
+.outcome-correct {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 0.04em;
+}
+
+.outcome-wrong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 0.04em;
+}
+
+.prediction-stars {
+  font-size: 26px;
+  letter-spacing: 4px;
+  margin: 10px 0;
+  color: var(--gold);
+}
+
+.prediction-reason-shown {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.prediction-reason-shown .reason-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.prediction-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.prediction-actions button {
+  flex: 1;
+  min-height: 40px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+}
+
+.prediction-next {
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  color: var(--blue) !important;
+  background: rgba(56, 189, 248, 0.1) !important;
+}
+
+.prediction-next:hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  border-color: var(--blue) !important;
+}
+
+@keyframes predictionIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* ========== Celebration Overlay ========== */
 
 .celebration-overlay {

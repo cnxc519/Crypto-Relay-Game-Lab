@@ -446,6 +446,7 @@
               <button id="levelModeWeeklyBtn" type="button" data-level-span="weekly">7天一关</button>
               <button id="levelModeGameDailyBtn" type="button" data-level-span="game_daily">1天游戏</button>
               <button id="levelModeGameWeeklyBtn" type="button" data-level-span="game_weekly">7天游戏</button>
+              <button id="levelModePredictionBtn" type="button" data-level-span="prediction">超级预测</button>
             </div>
           </div>
           <button id="closeLevelModalBtn" type="button">关闭</button>
@@ -497,6 +498,43 @@
                 <button id="chatClearBtn" type="button">清空对话</button>
               </div>
             </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="predictionLogModal">
+      <div class="modal wide-modal">
+        <div class="panel-title-row">
+          <h2>预测记录</h2>
+          <button id="closePredictionLogBtn" type="button">关闭</button>
+        </div>
+        <div id="predictionLogList" class="prediction-log-list"></div>
+      </div>
+    </div>
+
+    <div class="prediction-overlay" id="predictionOverlay">
+      <div class="prediction-card" id="predictionCard">
+        <div class="prediction-header">
+          <strong>超级预测</strong>
+          <span id="predictionTimeRange">-</span>
+        </div>
+        <div class="prediction-body" id="predictionBody">
+          <p class="prediction-hint">这 12 小时 BTC 会涨还是会跌？</p>
+          <div class="prediction-buttons">
+            <button id="predictionUpBtn" class="prediction-up" type="button">看涨</button>
+            <button id="predictionDownBtn" class="prediction-down" type="button">看跌</button>
+          </div>
+          <textarea id="predictionReasonInput" class="prediction-reason" placeholder="判断理由（可选）" rows="2"></textarea>
+        </div>
+        <div class="prediction-result" id="predictionResult" style="display:none">
+          <div class="prediction-move" id="predictionMove">-</div>
+          <div class="prediction-outcome" id="predictionOutcome">-</div>
+          <div class="prediction-stars" id="predictionStarsDisplay">-</div>
+          <div class="prediction-reason-shown" id="predictionReasonShown"></div>
+          <div class="prediction-actions">
+            <button id="predictionRandomNextBtn" class="prediction-next" type="button">随机下一关</button>
+            <button id="predictionRetryBtn" type="button">重来</button>
           </div>
         </div>
       </div>

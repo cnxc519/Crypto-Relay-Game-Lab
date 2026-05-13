@@ -1,52 +1,58 @@
 // 粘贴到浏览器 F12 控制台运行
-// 诊断游戏模式按钮为什么没反应
+// 诊断游戏/预测模式按钮
 
 console.log("=== 1. DOM 元素检查 ===");
-const gDaily = document.getElementById("levelModeGameDailyBtn");
-const gWeekly = document.getElementById("levelModeGameWeeklyBtn");
-console.log("1天游戏按钮:", gDaily ? "存在" : "❌ 不存在");
-console.log("7天游戏按钮:", gWeekly ? "存在" : "❌ 不存在");
+["levelModeGameDailyBtn", "levelModeGameWeeklyBtn", "levelModePredictionBtn"].forEach(id => {
+  const el = document.getElementById(id);
+  console.log(id + ":", el ? "存在" : "缺失");
+});
 
-console.log("\n=== 2. setLevelSpanMode 测试 ===");
+console.log("\n=== 2. LEVEL_SPAN_MODES ===");
+console.log("game_daily:", LEVEL_SPAN_MODES.game_daily ? "有" : "缺失");
+console.log("game_weekly:", LEVEL_SPAN_MODES.game_weekly ? "有" : "缺失");
+console.log("prediction:", LEVEL_SPAN_MODES.prediction ? "有" : "缺失");
+
+console.log("\n=== 3. setLevelSpanMode('prediction') ===");
 try {
-  setLevelSpanMode("game_daily");
-  console.log("setLevelSpanMode('game_daily') 成功");
-  console.log("当前 mode:", state.game.profile.levelMode?.currentSpanModeId);
+  setLevelSpanMode("prediction");
+  const mode = currentLevelSpanMode();
+  console.log("当前 mode:", mode.id, mode.id === "prediction" ? "正确" : "不对，仍是 " + mode.id);
 } catch (e) {
-  console.error("❌ setLevelSpanMode 报错:", e.message);
-  console.error(e.stack);
+  console.error("报错:", e.message);
 }
 
-console.log("\n=== 3. renderLevelModal 测试 ===");
-try {
-  renderLevelModal();
-  console.log("renderLevelModal() 成功");
-  console.log("1天游戏按钮 active?", gDaily?.classList.contains("active"));
-  console.log("7天游戏按钮 active?", gWeekly?.classList.contains("active"));
-} catch (e) {
-  console.error("❌ renderLevelModal 报错:", e.message);
-  console.error(e.stack);
-}
-
-console.log("\n=== 4. generateLevelList 测试 ===");
+console.log("\n=== 4. generateLevelList(prediction) ===");
 try {
   const mode = currentLevelSpanMode();
-  console.log("当前 mode:", JSON.stringify(mode));
   const levels = generateLevelList(mode);
-  console.log("关卡数量:", levels.length);
+  console.log("12h 关卡数量:", levels.length);
+  if (levels.length > 0) {
+    console.log("第一关:", levels[0].id, levels[0].title);
+    console.log("第二关:", levels[1]?.id, levels[1]?.title);
+  }
 } catch (e) {
-  console.error("❌ generateLevelList 报错:", e.message);
-  console.error(e.stack);
+  console.error("报错:", e.message);
 }
 
-console.log("\n=== 5. 事件监听器检查 ===");
-if (gDaily) {
-  const listeners = getEventListeners(gDaily);
-  console.log("1天游戏按钮 click 监听器数量:", listeners?.click?.length || 0);
-} else {
-  console.log("❌ 按钮不存在，无法检查事件监听");
+console.log("\n=== 5. randomPrediction() ===");
+try {
+  randomPrediction();
+  console.log("randomPrediction 成功，弹窗已打开");
+} catch (e) {
+  console.error("报错:", e.message, e.stack);
 }
 
-// 切回 daily 避免影响后续使用
+console.log("\n=== 6. 事件监听器数量 ===");
+["levelModeGameDailyBtn", "levelModeGameWeeklyBtn", "levelModePredictionBtn"].forEach(id => {
+  try {
+    const el = document.getElementById(id);
+    const listeners = getEventListeners(el);
+    console.log(id + " click:", listeners?.click?.length || 0);
+  } catch (e) {
+    console.log(id + ": 无法检查");
+  }
+});
+
 try { setLevelSpanMode("daily"); } catch(e) {}
-console.log("\n=== 诊断完成 ===");
+try { closePrediction(); } catch(e) {}
+console.log("\n=== 完成 ===");
