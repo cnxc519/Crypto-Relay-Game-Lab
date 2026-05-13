@@ -24,18 +24,36 @@ function renderLevelModal() {
   els.levelModeGameWeeklyBtn.classList.toggle("active", mode.id === "game_weekly");
   els.levelModePredictionBtn.classList.toggle("active", mode.id === "prediction");
   if (mode.prediction) {
-    const correctCount = levels.reduce((sum, lv) => sum + ((records[lv.id] || {}).correct ? 1 : 0), 0);
-    const attemptedCount = levels.filter((lv) => (records[lv.id] || {}).attempts > 0).length;
-    const rate = attemptedCount > 0 ? ((correctCount / attemptedCount) * 100).toFixed(1) : "-";
-    const streak = levels.reduce((max, lv) => Math.max(max, (records[lv.id] || {}).bestStreak || 0), 0);
+    const now = Date.now();
+    const all = predictionPeriodStats(records, 0);
+    const today = predictionPeriodStats(records, dayStart(new Date()));
+    const week = predictionPeriodStats(records, weekStart(new Date()));
+    const gainStr = (v) => (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%";
     els.levelSummary.innerHTML = `
-      <div><span>总预测</span><strong>${stats.attempts}</strong></div>
-      <div><span>正确率</span><strong>${rate === "-" ? "-" : rate + "%"}</strong></div>
-      <div><span>最佳连胜</span><strong>${streak}</strong></div>
-      <div class="level-summary-action">
-        <button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button>
-        <button id="predictionLogOpenBtn" type="button" class="random-test-btn">预测记录</button>
+      <div class="prediction-stats-table">
+        <div class="prediction-stats-row">
+          <span class="stats-label">总计</span>
+          <span>${all.total} 预测</span>
+          <span>正确率 ${all.rate === "-" ? "-" : all.rate + "%"}</span>
+          <span class="${all.gain >= 0 ? "text-green" : "text-red"}">收益 ${gainStr(all.gain)}</span>
+          <span>最长连胜 ${all.streak}</span>
+        </div>
+        <div class="prediction-stats-row">
+          <span class="stats-label">本周</span>
+          <span>${week.total} 预测</span>
+          <span>正确率 ${week.rate === "-" ? "-" : week.rate + "%"}</span>
+          <span class="${week.gain >= 0 ? "text-green" : "text-red"}">收益 ${gainStr(week.gain)}</span>
+          <span>最长连胜 ${week.streak}</span>
+        </div>
+        <div class="prediction-stats-row">
+          <span class="stats-label">今日</span>
+          <span>${today.total} 预测</span>
+          <span>正确率 ${today.rate === "-" ? "-" : today.rate + "%"}</span>
+          <span class="${today.gain >= 0 ? "text-green" : "text-red"}">收益 ${gainStr(today.gain)}</span>
+          <span>最长连胜 ${today.streak}</span>
+        </div>
       </div>
+      <div class="level-summary-action"><button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button></div>
     `;
   } else {
     els.levelSummary.innerHTML = `

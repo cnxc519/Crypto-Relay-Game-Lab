@@ -267,6 +267,30 @@ function pickRandomPredictionLevel() {
   return levels[Math.floor(Math.random() * levels.length)];
 }
 
+function dayStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function weekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff).getTime();
+}
+
+function predictionPeriodStats(records, since) {
+  const list = Object.values(records || {}).filter((r) => (r.lastPlayedAt || 0) >= since);
+  const total = list.reduce((s, r) => s + (r.attempts || 0), 0);
+  const correct = list.reduce((s, r) => s + (r.correct ? 1 : 0), 0);
+  const rate = total > 0 ? ((correct / list.length) * 100).toFixed(1) : "-";
+  const streak = list.reduce((max, r) => Math.max(max, r.bestStreak || 0), 0);
+  const gain = list.reduce((s, r) => {
+    const pct = r.lastMovePct || 0;
+    return s + (r.lastCorrect ? Math.abs(pct) : -Math.abs(pct));
+  }, 0);
+  return { total: list.length, correct, rate, streak, gain };
+}
+
 function predictionStars(correct, movePct) {
   const abs = Math.abs(movePct || 0);
   if (correct) {

@@ -147,24 +147,13 @@ function bindEvents() {
       closeLevelModal();
       randomPrediction();
     }
-    const logBtn = event.target.closest("#predictionLogOpenBtn");
-    if (logBtn) {
-      renderPredictionLog();
-      els.predictionLogModal.classList.add("show");
-    }
   });
   els.predictionUpBtn.addEventListener("click", () => submitPrediction("up"));
   els.predictionDownBtn.addEventListener("click", () => submitPrediction("down"));
   els.predictionRandomNextBtn.addEventListener("click", nextRandomPrediction);
   els.predictionRetryBtn.addEventListener("click", retryPrediction);
-  els.predictionOverlay.addEventListener("click", (event) => {
-    if (event.target === els.predictionOverlay) closePrediction();
-  });
+  els.predictionCloseBtn.addEventListener("click", closePrediction);
   initPredictionDrag();
-  els.closePredictionLogBtn.addEventListener("click", () => els.predictionLogModal.classList.remove("show"));
-  els.predictionLogModal.addEventListener("click", (event) => {
-    if (event.target === els.predictionLogModal) els.predictionLogModal.classList.remove("show");
-  });
   els.settleGameBtn.addEventListener("click", () => finishChallenge("manual"));
   els.dailyTaskHudBtn.addEventListener("click", openDailyTaskModal);
   els.closeDailyTaskBtn.addEventListener("click", closeDailyTaskModal);
@@ -359,15 +348,17 @@ function bindEvents() {
 
   window.addEventListener("resize", render);
   window.addEventListener("keydown", (event) => {
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
     if (els.predictionOverlay.classList.contains("show")) {
-      const isInput = event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement;
       if (event.code === "ArrowUp" || event.code === "ArrowDown") {
         event.preventDefault();
-        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
         if (els.predictionBody.style.display !== "none") {
           submitPrediction(event.code === "ArrowUp" ? "up" : "down");
         }
+        return;
+      }
+      if (event.code === "F2") {
+        event.preventDefault();
+        if (els.predictionBody.style.display !== "none") skipPrediction();
         return;
       }
       if (event.code === "Space") {
@@ -385,9 +376,9 @@ function bindEvents() {
         closePrediction();
         return;
       }
-      if (isInput) return;
       return;
     }
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
     if (state.game.active?.gameMode && !state.game.settling) {
       if (event.code === "ArrowUp") {
         event.preventDefault();

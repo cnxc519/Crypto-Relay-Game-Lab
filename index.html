@@ -503,20 +503,13 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="predictionLogModal">
-      <div class="modal wide-modal">
-        <div class="panel-title-row">
-          <h2>预测记录</h2>
-          <button id="closePredictionLogBtn" type="button">关闭</button>
-        </div>
-        <div id="predictionLogList" class="prediction-log-list"></div>
-      </div>
-    </div>
-
     <div class="prediction-overlay" id="predictionOverlay">
       <div class="prediction-card" id="predictionCard">
         <div class="prediction-header">
-          <strong>超级预测</strong>
+          <div class="prediction-header-inner">
+            <strong>超级预测</strong>
+            <button id="predictionCloseBtn" class="prediction-close-btn" type="button" title="关闭">&times;</button>
+          </div>
           <span id="predictionTimeRange">-</span>
         </div>
         <div class="prediction-body" id="predictionBody">

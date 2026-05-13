@@ -296,7 +296,7 @@ function startPrediction(levelIndex) {
   els.predictionReasonInput.value = "";
   els.predictionOverlay.classList.add("show");
   positionPredictionCard();
-  els.predictionUpBtn.focus();
+  els.predictionReasonInput.focus();
 }
 
 function positionPredictionCard() {
@@ -356,13 +356,49 @@ function initPredictionDrag() {
   });
 }
 
+function skipPrediction() {
+  const p = state.game._prediction;
+  if (!p || els.predictionBody.style.display === "none") return;
+  const reason = els.predictionReasonInput.value.trim();
+  if (reason) {
+    appendPredictionLog({
+      time: Date.now(),
+      levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \\d+ 关$/, "")}`,
+      direction: "跳过",
+      reason,
+      correct: null,
+      movePct: p.movePct,
+      stars: 0,
+      skip: true,
+    });
+  }
+  showPredictionResult(null, p.movePct, 0, reason);
+}
+
 function submitPrediction(direction) {
   const p = state.game._prediction;
   if (!p) return;
   const reason = els.predictionReasonInput.value.trim();
   const correct = (direction === "up" && p.movePct > 0) || (direction === "down" && p.movePct < 0);
   const stars = predictionStars(correct, p.movePct);
+  recordPredictionResult(direction, reason, correct, stars);
+  if (reason) {
+    appendPredictionLog({
+      time: Date.now(),
+      levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \\d+ 关$/, "")}`,
+      direction: direction === "up" ? "看涨" : "看跌",
+      reason,
+      correct,
+      movePct: p.movePct,
+      stars,
+    });
+  }
+  showPredictionResult(correct, p.movePct, stars, reason);
+}
 
+function recordPredictionResult(direction, reason, correct, stars) {
+  const p = state.game._prediction;
+  if (!p) return;
   const mode = levelSpanModeById("prediction");
   const dataset = currentLevelDatasetInfo();
   const bucketInfo = currentLevelBucketInfo(mode, dataset);
@@ -389,7 +425,7 @@ function submitPrediction(direction) {
     ...previous,
     attempts,
     bestStars,
-    correct,
+    correct: correct === null ? previous.correct : correct,
     bestStreak,
     _streak: newStreak,
     lastCorrect: correct,
@@ -404,22 +440,18 @@ function submitPrediction(direction) {
   levelMode.lastLevelId = p.levelId;
   levelMode.updatedAt = Date.now();
   saveGameProfile();
+}
 
-  appendPredictionLog({
-    time: Date.now(),
-    levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \d+ 关$/, "")}`,
-    direction: direction === "up" ? "看涨" : "看跌",
-    reason,
-    correct,
-    movePct: p.movePct,
-    stars,
-  });
-
-  const pctStr = (p.movePct >= 0 ? "+" : "") + (p.movePct * 100).toFixed(2) + "%";
-  els.predictionMove.innerHTML = `BTC 涨跌 <strong class="${p.movePct >= 0 ? "text-green" : "text-red"}">${pctStr}</strong>`;
-  els.predictionOutcome.innerHTML = correct
-    ? `<span class="outcome-correct">预测正确！</span>`
-    : `<span class="outcome-wrong">预测错误</span>`;
+function showPredictionResult(correct, movePct, stars, reason) {
+  const pctStr = (movePct >= 0 ? "+" : "") + (movePct * 100).toFixed(2) + "%";
+  els.predictionMove.innerHTML = `BTC 涨跌 <strong class="${movePct >= 0 ? "text-green" : "text-red"}">${pctStr}</strong>`;
+  if (correct === null) {
+    els.predictionOutcome.innerHTML = `<span class="outcome-skip">已跳过</span>`;
+  } else {
+    els.predictionOutcome.innerHTML = correct
+      ? `<span class="outcome-correct">预测正确！</span>`
+      : `<span class="outcome-wrong">预测错误</span>`;
+  }
   els.predictionStarsDisplay.innerHTML = starsText(stars);
   els.predictionReasonShown.innerHTML = reason ? `<span class="reason-label">你的理由：</span>${escapeHtml(reason)}` : "";
   els.predictionBody.style.display = "none";
@@ -432,28 +464,6 @@ function appendPredictionLog(entry) {
   log.unshift(entry);
   if (log.length > 500) log.length = 500;
   localStorage.setItem("btcReplayLab.predictionLog", JSON.stringify(log));
-}
-
-function renderPredictionLog() {
-  const stored = localStorage.getItem("btcReplayLab.predictionLog");
-  const log = stored ? JSON.parse(stored) : [];
-  if (!log.length) {
-    els.predictionLogList.innerHTML = '<div class="prediction-log-empty">暂无预测记录</div>';
-    return;
-  }
-  els.predictionLogList.innerHTML = log.map((entry, i) => {
-    const time = new Date(entry.time).toLocaleString("zh-CN", { hour12: false });
-    return `<div class="prediction-log-row">
-      <span class="log-index">#${log.length - i}</span>
-      <span class="log-time">${time}</span>
-      <span class="log-level">${escapeHtml(entry.levelTitle || "")}</span>
-      <span class="log-dir ${entry.direction === "看涨" ? "dir-up" : "dir-down"}">${entry.direction}</span>
-      ${entry.reason ? `<span class="log-reason">${escapeHtml(entry.reason)}</span>` : '<span class="log-reason muted">-</span>'}
-      <span class="log-pct ${entry.movePct >= 0 ? "text-green" : "text-red"}">${(entry.movePct >= 0 ? "+" : "") + (entry.movePct * 100).toFixed(2)}%</span>
-      <span class="log-result ${entry.correct ? "text-green" : "text-red"}">${entry.correct ? "正确" : "错误"}</span>
-      <span class="log-stars">${"★".repeat(entry.stars)}${"☆".repeat(5 - entry.stars)}</span>
-    </div>`;
-  }).join("");
 }
 
 function randomPrediction() {
