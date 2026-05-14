@@ -28,7 +28,11 @@ function renderLevelModal() {
     const all = predictionPeriodStats(records, 0);
     const today = predictionPeriodStats(records, dayStart(new Date()));
     const week = predictionPeriodStats(records, weekStart(new Date()));
+    const sDay = levelMode._streakDay || 0, bDay = levelMode._bestStreakDay || 0;
+    const sWeek = levelMode._streakWeek || 0, bWeek = levelMode._bestStreakWeek || 0;
+    const sAll = levelMode._streakAll || 0, bAll = levelMode._bestStreakAll || 0;
     const gainStr = (v) => (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%";
+    const streakStr = (s, b) => `连胜 ${s} · 最佳 ${b}`;
     els.levelSummary.innerHTML = `
       <div class="prediction-stats-table">
         <div class="prediction-stats-row">
@@ -36,21 +40,21 @@ function renderLevelModal() {
           <span>${all.total} 预测</span>
           <span>正确率 ${all.rate === "-" ? "-" : all.rate + "%"}</span>
           <span class="${all.gain >= 0 ? "text-green" : "text-red"}">收益 ${gainStr(all.gain)}</span>
-          <span>最长连胜 ${all.streak}</span>
+          <span>${streakStr(sAll, bAll)}</span>
         </div>
         <div class="prediction-stats-row">
           <span class="stats-label">本周</span>
           <span>${week.total} 预测</span>
           <span>正确率 ${week.rate === "-" ? "-" : week.rate + "%"}</span>
           <span class="${week.gain >= 0 ? "text-green" : "text-red"}">收益 ${gainStr(week.gain)}</span>
-          <span>最长连胜 ${week.streak}</span>
+          <span>${streakStr(sWeek, bWeek)}</span>
         </div>
         <div class="prediction-stats-row">
           <span class="stats-label">今日</span>
           <span>${today.total} 预测</span>
           <span>正确率 ${today.rate === "-" ? "-" : today.rate + "%"}</span>
           <span class="${today.gain >= 0 ? "text-green" : "text-red"}">收益 ${gainStr(today.gain)}</span>
-          <span>最长连胜 ${today.streak}</span>
+          <span>${streakStr(sDay, bDay)}</span>
         </div>
       </div>
       <div class="level-summary-action"><button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button></div>

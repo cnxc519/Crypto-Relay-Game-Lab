@@ -101,6 +101,11 @@ function bindEvents() {
   els.characterGrid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-character]");
     if (!button) return;
+    const char = characterById(button.dataset.character);
+    if (char.predictionOnly) {
+      showToast(`${char.name} 仅可在超级预测模式中使用。`);
+      return;
+    }
     state.game.profile.activeCharacter = button.dataset.character;
     state.game.activeQuoteCharacterId = null;
     state.game.activeQuote = "";

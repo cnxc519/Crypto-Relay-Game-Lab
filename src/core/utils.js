@@ -20,14 +20,11 @@ function formatInterval(ms) {
 }
 
 function formatTime(ts) {
-  return new Date(ts).toLocaleString("zh-CN", {
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const d = new Date(ts);
+  const day = d.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const wd = d.toLocaleDateString("zh-CN", { weekday: "short" });
+  const time = d.toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit" });
+  return `${day} ${wd} ${time}`;
 }
 
 function formatShortTime(ts) {

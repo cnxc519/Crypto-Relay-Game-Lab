@@ -113,6 +113,7 @@ const els = {
   predictionRandomNextBtn: $("predictionRandomNextBtn"),
   predictionRetryBtn: $("predictionRetryBtn"),
   predictionCloseBtn: $("predictionCloseBtn"),
+  predictionReviewInput: $("predictionReviewInput"),
   levelSummary: $("levelSummary"),
   prevLevelPageBtn: $("prevLevelPageBtn"),
   nextLevelPageBtn: $("nextLevelPageBtn"),

@@ -215,7 +215,8 @@ function levelWindowLabel(startTime, endTimeExclusive, mode = currentLevelSpanMo
     const start = new Date(startTime);
     const end = new Date(endTimeExclusive - 1);
     const pad = (n) => String(n).padStart(2, "0");
-    return `${start.getUTCFullYear()}-${pad(start.getUTCMonth() + 1)}-${pad(start.getUTCDate())} ${pad(start.getUTCHours())}:00~${pad(end.getUTCHours())}:59`;
+    const wd = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][start.getUTCDay()];
+    return `${start.getUTCFullYear()}-${pad(start.getUTCMonth() + 1)}-${pad(start.getUTCDate())} ${wd} ${pad(start.getUTCHours())}:00~${pad(end.getUTCHours())}:59`;
   }
   const startKey = levelDateKey(startTime);
   if (mode.days <= 1) return startKey;
@@ -283,12 +284,11 @@ function predictionPeriodStats(records, since) {
   const total = list.reduce((s, r) => s + (r.attempts || 0), 0);
   const correct = list.reduce((s, r) => s + (r.correct ? 1 : 0), 0);
   const rate = total > 0 ? ((correct / list.length) * 100).toFixed(1) : "-";
-  const streak = list.reduce((max, r) => Math.max(max, r.bestStreak || 0), 0);
   const gain = list.reduce((s, r) => {
     const pct = r.lastMovePct || 0;
     return s + (r.lastCorrect ? Math.abs(pct) : -Math.abs(pct));
   }, 0);
-  return { total: list.length, correct, rate, streak, gain };
+  return { total: list.length, correct, rate, gain };
 }
 
 function predictionStars(correct, movePct) {

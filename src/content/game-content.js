@@ -61,6 +61,13 @@ const CHALLENGE_TYPES = {
     horizon: LEVEL_MODE_CANDLES - 1,
     xp: 100,
   },
+  prediction: {
+    name: "超级预测",
+    text: "12h 为一关，预测涨跌方向，训练直觉判断。",
+    context: 48,
+    horizon: 47,
+    xp: 8,
+  },
 };
 
 const LEGACY_ACHIEVEMENTS = [
@@ -225,6 +232,25 @@ const CHARACTER_CONFIG = [
     material: "绿焰筹码",
     challengeType: "trap",
     success: (r) => Math.abs(r.movePct) >= 0.012 && r.score >= 75,
+  },
+  {
+    id: "divine_seer",
+    name: "神代月",
+    file: "神圣皇感.png",
+    title: "预言之神 · 皇感天威",
+    quotes: [
+      "涨跌之间，直觉先于逻辑抵达真相。",
+      "每一根 K 线都是神谕的碎片。",
+      "不看盘面，只看方向；不再犹豫，只问涨跌。",
+      "预测不是赌博，是跟市场对话。",
+      "不对也没关系，直觉会越练越锋利。",
+    ],
+    style: "涨跌直觉、预测准确率、方向敏锐",
+    rule: "仅可在超级预测模式中使用；预测正确获得角色经验。",
+    material: "神谕之瞳",
+    challengeType: "prediction",
+    predictionOnly: true,
+    success: (r) => r.correct === true,
   },
 ];
 

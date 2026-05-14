@@ -294,6 +294,14 @@ function startPrediction(levelIndex) {
   els.predictionBody.style.display = "";
   els.predictionResult.style.display = "none";
   els.predictionReasonInput.value = "";
+  const pc = characterById("divine_seer");
+  if (pc && state.game.profile.activeCharacter !== "divine_seer") {
+    state.game.profile.activeCharacter = "divine_seer";
+    state.game.activeQuoteCharacterId = null;
+    state.game.activeQuote = "";
+    saveGameProfile();
+    renderGame();
+  }
   els.predictionOverlay.classList.add("show");
   positionPredictionCard();
   els.predictionReasonInput.focus();
@@ -403,6 +411,74 @@ function recordPredictionResult(direction, reason, correct, stars) {
   const dataset = currentLevelDatasetInfo();
   const bucketInfo = currentLevelBucketInfo(mode, dataset);
   const levelMode = levelModeForDataset(bucketInfo);
+
+  const now = Date.now();
+  const todayKey = levelDateKey(new Date(now));
+  const weekKey = levelDateKey(new Date(weekStart(new Date())));
+  levelMode._lastDate = levelMode._lastDate || "";
+  levelMode._lastWeek = levelMode._lastWeek || "";
+
+  const updateStreak = (key) => {
+    const cur = levelMode[key] || 0;
+    const best = levelMode[key.replace("_streak", "_bestStreak")] || 0;
+    const nxt = correct ? cur + 1 : 0;
+    levelMode[key] = nxt;
+    if (nxt > best) levelMode[key.replace("_streak", "_bestStreak")] = nxt;
+    return nxt;
+  };
+
+  if (levelMode._lastDate !== todayKey) {
+    levelMode._streakDay = 0;
+    levelMode._lastDate = todayKey;
+  }
+  if (levelMode._lastWeek !== weekKey) {
+    levelMode._streakWeek = 0;
+    levelMode._lastWeek = weekKey;
+  }
+
+  updateStreak("_streakAll");
+  updateStreak("_streakDay");
+  updateStreak("_streakWeek");
+
+  const character = characterById("divine_seer");
+  const charState = state.game.profile.characters["divine_seer"];
+  if (charState && correct !== null) {
+    const xpGain = correct ? 8 : 2;
+    charState.xp += xpGain;
+    charState.runs += 1;
+    if (correct) charState.successes += 1;
+    charState.trialWindow = [...(charState.trialWindow || []), correct].slice(-12);
+
+    const ascensionStreak = levelMode._streakAll || 0;
+    const ascensionPassed = ascensionStreak >= 8;
+    const materialGain = ascensionPassed ? 1 : 0;
+    if (materialGain) {
+      levelMode._streakAll = 0;
+      levelMode._streakDay = 0;
+      levelMode._streakWeek = 0;
+    }
+    charState.materials += materialGain;
+
+    const atCap = characterLevelFromXp(charState.xp, charState.stage) >= charState.stage * 200;
+    const trialSuccesses = charState.trialWindow.filter(Boolean).length;
+    const neededMaterials = charState.stage * 12;
+    if (charState.stage < 5 && atCap && charState.materials >= neededMaterials && trialSuccesses >= 3) {
+      charState.stage += 1;
+      charState.materials -= neededMaterials;
+    }
+
+    state.game.lastCharacterGain = {
+      character,
+      beforeLevel: characterLevelFromXp(charState.xp - xpGain, charState.stage),
+      afterLevel: characterLevelFromXp(charState.xp, charState.stage),
+      beforeStage: charState.stage,
+      afterStage: charState.stage,
+      ascended: false,
+      xp: xpGain,
+      materials: materialGain,
+    };
+  }
+
   const records = levelMode.records;
   const previous = records[p.levelId] || {
     id: p.levelId,
@@ -418,16 +494,11 @@ function recordPredictionResult(direction, reason, correct, stars) {
   };
   const attempts = (previous.attempts || 0) + 1;
   const bestStars = Math.max(previous.bestStars || 0, stars);
-  const streak = previous._streak || 0;
-  const newStreak = correct ? streak + 1 : 0;
-  const bestStreak = Math.max(previous.bestStreak || 0, newStreak);
   const record = {
     ...previous,
     attempts,
     bestStars,
     correct: correct === null ? previous.correct : correct,
-    bestStreak,
-    _streak: newStreak,
     lastCorrect: correct,
     lastStars: stars,
     lastDirection: direction,
@@ -443,6 +514,15 @@ function recordPredictionResult(direction, reason, correct, stars) {
 }
 
 function showPredictionResult(correct, movePct, stars, reason) {
+  const p = state.game._prediction;
+  if (p) {
+    const endIdx = Math.min(p.level.endIndex, state.candles.length - 1);
+    state.currentIndex = endIdx;
+    state.hideFuture = true;
+    centerOnCurrent(state.viewEnd - state.viewStart || 220);
+    syncTimeline();
+    render();
+  }
   const pctStr = (movePct >= 0 ? "+" : "") + (movePct * 100).toFixed(2) + "%";
   els.predictionMove.innerHTML = `BTC 涨跌 <strong class="${movePct >= 0 ? "text-green" : "text-red"}">${pctStr}</strong>`;
   if (correct === null) {
@@ -454,6 +534,7 @@ function showPredictionResult(correct, movePct, stars, reason) {
   }
   els.predictionStarsDisplay.innerHTML = starsText(stars);
   els.predictionReasonShown.innerHTML = reason ? `<span class="reason-label">你的理由：</span>${escapeHtml(reason)}` : "";
+  els.predictionReviewInput.value = "";
   els.predictionBody.style.display = "none";
   els.predictionResult.style.display = "";
 }
@@ -466,7 +547,17 @@ function appendPredictionLog(entry) {
   localStorage.setItem("btcReplayLab.predictionLog", JSON.stringify(log));
 }
 
+function saveReview() {
+  const review = els.predictionReviewInput.value.trim();
+  if (!review) return;
+  const stored = localStorage.getItem("btcReplayLab.predictionLog");
+  const log = stored ? JSON.parse(stored) : [];
+  if (log.length) log[0].review = review;
+  localStorage.setItem("btcReplayLab.predictionLog", JSON.stringify(log));
+}
+
 function randomPrediction() {
+  saveReview();
   const level = pickRandomPredictionLevel();
   if (!level) {
     showToast("请先加载数据。");
@@ -476,6 +567,7 @@ function randomPrediction() {
 }
 
 function retryPrediction() {
+  saveReview();
   const p = state.game._prediction;
   if (!p) return;
   startPrediction(p.levelIndex);
@@ -486,6 +578,7 @@ function nextRandomPrediction() {
 }
 
 function closePrediction() {
+  saveReview();
   els.predictionOverlay.classList.remove("show");
   state.game._prediction = null;
 }

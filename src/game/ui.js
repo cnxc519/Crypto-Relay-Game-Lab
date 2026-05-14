@@ -84,24 +84,41 @@ function renderCharacterPanel() {
     <span>${escapeHtml(character.rule)}</span><br>
     <span>适合试炼：${escapeHtml(CHALLENGE_TYPES[character.challengeType]?.name || "盲测快局")}；培养风格：${escapeHtml(character.style)}</span>
   `;
-  els.characterQuestBtn.textContent = `开启 ${character.name} 试炼`;
-  els.ascensionTrialBtn.textContent = `开启 ${character.name} 进阶试炼`;
+  if (character.predictionOnly) {
+    els.characterQuestBtn.style.display = "none";
+    els.ascensionTrialBtn.style.display = "none";
+  } else {
+    els.characterQuestBtn.style.display = "";
+    els.ascensionTrialBtn.style.display = "";
+    els.characterQuestBtn.textContent = `开启 ${character.name} 试炼`;
+    els.ascensionTrialBtn.textContent = `开启 ${character.name} 进阶试炼`;
+  }
   els.characterGrid.innerHTML = CHARACTER_CONFIG.map((item) => {
     const itemState = profile.characters[item.id];
     const itemLevel = characterLevelFromXp(itemState.xp, itemState.stage);
+    const locked = item.predictionOnly ? " prediction-locked" : "";
     return `
-      <button class="character-pick ${item.id === character.id ? "active" : ""}" type="button" data-character="${item.id}" title="${escapeHtml(item.name)} Lv.${itemLevel}">
+      <button class="character-pick ${item.id === character.id ? "active" : ""}${locked}" type="button" data-character="${item.id}" title="${escapeHtml(item.name)} Lv.${itemLevel}${item.predictionOnly ? " (仅超级预测)" : ""}">
         <img src="${characterImagePath(item)}" alt="${escapeHtml(item.name)}" />
         <span>${escapeHtml(item.name)}</span>
       </button>
     `;
   }).join("");
-  els.characterMaterialList.innerHTML = `
-    <div class="material-item"><span>${escapeHtml(character.material)}</span><strong>${charState.materials}/${ascensionNeed}</strong></div>
-    <div class="material-item"><span>进阶门槛</span><strong>特殊试炼收益 >= 5%</strong></div>
-    <div class="material-item"><span>角色试炼</span><strong>${trialSuccesses}/10 成功</strong></div>
-    <div class="material-item"><span>培养风格</span><strong>${escapeHtml(character.style)}</strong></div>
-  `;
+  if (character.predictionOnly) {
+    els.characterMaterialList.innerHTML = `
+      <div class="material-item"><span>${escapeHtml(character.material)}</span><strong>${charState.materials}/${ascensionNeed}</strong></div>
+      <div class="material-item"><span>进阶门槛</span><strong>连胜 8 次获得材料</strong></div>
+      <div class="material-item"><span>预测连胜</span><strong>${trialSuccesses}/10 成功</strong></div>
+      <div class="material-item"><span>培养风格</span><strong>${escapeHtml(character.style)}</strong></div>
+    `;
+  } else {
+    els.characterMaterialList.innerHTML = `
+      <div class="material-item"><span>${escapeHtml(character.material)}</span><strong>${charState.materials}/${ascensionNeed}</strong></div>
+      <div class="material-item"><span>进阶门槛</span><strong>特殊试炼收益 >= 5%</strong></div>
+      <div class="material-item"><span>角色试炼</span><strong>${trialSuccesses}/10 成功</strong></div>
+      <div class="material-item"><span>培养风格</span><strong>${escapeHtml(character.style)}</strong></div>
+    `;
+  }
 }
 
 function settlementReviewCharacter(settlement = state.game.lastSettlement) {
