@@ -57,7 +57,11 @@ function renderLevelModal() {
           <span>${streakStr(sDay, bDay)}</span>
         </div>
       </div>
-      <div class="level-summary-action"><button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button></div>
+      <div class="level-summary-action">
+        <span class="summary-left"><button id="predictionLogBtn" type="button" class="log-btn">记录</button></span>
+        <span class="summary-center"><button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button></span>
+        <span class="summary-right"></span>
+      </div>
     `;
   } else {
     els.levelSummary.innerHTML = `

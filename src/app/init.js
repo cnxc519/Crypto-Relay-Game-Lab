@@ -152,6 +152,10 @@ function bindEvents() {
       closeLevelModal();
       randomPrediction();
     }
+    const logBtn = event.target.closest("#predictionLogBtn");
+    if (logBtn) {
+      openPredictionLog();
+    }
   });
   els.predictionUpBtn.addEventListener("click", () => submitPrediction("up"));
   els.predictionDownBtn.addEventListener("click", () => submitPrediction("down"));
@@ -159,6 +163,10 @@ function bindEvents() {
   els.predictionRetryBtn.addEventListener("click", retryPrediction);
   els.predictionCloseBtn.addEventListener("click", closePrediction);
   initPredictionDrag();
+  els.closePredictionLogModalBtn.addEventListener("click", closePredictionLog);
+  els.predictionLogModal.addEventListener("click", (event) => {
+    if (event.target === els.predictionLogModal) closePredictionLog();
+  });
   els.settleGameBtn.addEventListener("click", () => finishChallenge("manual"));
   els.dailyTaskHudBtn.addEventListener("click", openDailyTaskModal);
   els.closeDailyTaskBtn.addEventListener("click", closeDailyTaskModal);

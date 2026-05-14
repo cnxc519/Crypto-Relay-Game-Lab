@@ -294,6 +294,9 @@ function startPrediction(levelIndex) {
   els.predictionBody.style.display = "";
   els.predictionResult.style.display = "none";
   els.predictionReasonInput.value = "";
+  if (!state.game._prevCharacter) {
+    state.game._prevCharacter = state.game.profile.activeCharacter;
+  }
   const pc = characterById("divine_seer");
   if (pc && state.game.profile.activeCharacter !== "divine_seer") {
     state.game.profile.activeCharacter = "divine_seer";
@@ -581,6 +584,96 @@ function closePrediction() {
   saveReview();
   els.predictionOverlay.classList.remove("show");
   state.game._prediction = null;
+  if (state.game._prevCharacter && state.game._prevCharacter !== "divine_seer") {
+    state.game.profile.activeCharacter = state.game._prevCharacter;
+    state.game.activeQuoteCharacterId = null;
+    state.game.activeQuote = "";
+    state.game._prevCharacter = null;
+    saveGameProfile();
+    renderGame();
+  }
+}
+
+function openPredictionLog() {
+  renderPredictionCalendar();
+  els.predictionLogModal.classList.add("show");
+}
+
+function predictionLogEntries() {
+  const stored = localStorage.getItem("btcReplayLab.predictionLog");
+  return stored ? JSON.parse(stored) : [];
+}
+
+function renderPredictionCalendar() {
+  const entries = predictionLogEntries();
+  const grouped = {};
+  for (const e of entries) {
+    const dk = new Date(e.time).toISOString().slice(0, 10);
+    if (!grouped[dk]) grouped[dk] = { total: 0, correct: 0, gain: 0, entries: [] };
+    grouped[dk].total++;
+    if (e.correct) grouped[dk].correct++;
+    grouped[dk].gain += e.correct ? Math.abs(e.movePct || 0) : -Math.abs(e.movePct || 0);
+    grouped[dk].entries.push(e);
+  }
+  const dates = Object.keys(grouped).sort().reverse();
+  if (!dates.length) {
+    els.predictionLogCalendar.innerHTML = '<div class="calendar-empty">暂无预测记录</div>';
+    els.predictionDayDetail.style.display = "none";
+    return;
+  }
+  els.predictionDayDetail.style.display = "none";
+  els.predictionLogCalendar.innerHTML = dates.map((dk) => {
+    const g = grouped[dk];
+    const rate = g.total > 0 ? ((g.correct / g.total) * 100).toFixed(0) : 0;
+    const gainStr = (g.gain >= 0 ? "+" : "") + (g.gain * 100).toFixed(2) + "%";
+    return `<div class="calendar-day" data-date="${dk}">
+      <span class="cal-date">${dk.slice(5)}</span>
+      <span class="cal-total">${g.total}次</span>
+      <span class="cal-rate ${rate >= 50 ? "text-green" : "text-red"}">${rate}%</span>
+      <span class="cal-gain ${g.gain >= 0 ? "text-green" : "text-red"}">${gainStr}</span>
+    </div>`;
+  }).join("");
+
+  els.predictionLogCalendar.querySelectorAll(".calendar-day").forEach((el) => {
+    el.addEventListener("click", () => renderPredictionDay(el.dataset.date));
+  });
+}
+
+function renderPredictionDay(dk) {
+  const entries = predictionLogEntries().filter((e) => new Date(e.time).toISOString().slice(0, 10) === dk);
+  if (!entries.length) return;
+  els.predictionDayDetail.innerHTML = `
+    <div class="day-detail-header">
+      <strong>${dk}</strong>
+      <button type="button" class="day-detail-back" id="dayDetailBackBtn">返回日历</button>
+    </div>
+    <div class="day-detail-list">
+      ${entries.map((e) => {
+        const time = new Date(e.time).toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit" });
+        const dir = e.direction || "-";
+        const correct = e.skip ? "跳过" : (e.correct ? "正确" : "错误");
+        const cls = e.skip ? "muted" : (e.correct ? "text-green" : "text-red");
+        return `<div class="day-detail-row">
+          <span class="dd-time">${time}</span>
+          <span class="dd-level">${escapeHtml(e.levelTitle || "")}</span>
+          <span class="dd-dir">${dir}</span>
+          <span class="dd-pct ${(e.movePct || 0) >= 0 ? "text-green" : "text-red"}">${((e.movePct || 0) >= 0 ? "+" : "") + ((e.movePct || 0) * 100).toFixed(2)}%</span>
+          <span class="dd-result ${cls}">${correct}</span>
+          <span class="dd-stars">${"★".repeat(e.stars || 0)}${"☆".repeat(5 - (e.stars || 0))}</span>
+          ${e.reason ? `<span class="dd-reason">${escapeHtml(e.reason)}</span>` : ""}
+          ${e.review ? `<span class="dd-review">复盘：${escapeHtml(e.review)}</span>` : ""}
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+  els.predictionDayDetail.style.display = "";
+  document.getElementById("dayDetailBackBtn").addEventListener("click", () => {
+    renderPredictionCalendar();
+  });
+}
+
+function closePredictionLog() {
+  els.predictionLogModal.classList.remove("show");
 }
 
 function setChallengeBias(bias) {

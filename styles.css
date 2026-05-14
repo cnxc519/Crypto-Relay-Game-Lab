@@ -1605,6 +1605,20 @@ th {
   align-items: center;
 }
 
+.log-btn {
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+  background: transparent !important;
+  font-size: 12px !important;
+}
+
+.log-btn:hover {
+  border-color: var(--muted) !important;
+  color: var(--text) !important;
+}
+
 .random-test-btn {
   min-height: 36px !important;
   padding: 0 20px !important;
@@ -1623,9 +1637,22 @@ th {
 
 .level-summary-action {
   display: flex;
-  gap: 8px;
   justify-content: center;
+  align-items: center;
+  position: relative;
   grid-column: 1 / -1;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.summary-left {
+  position: absolute;
+  left: 0;
+}
+
+.summary-center {
+  text-align: center;
 }
 
 .prediction-stats-table {
@@ -1886,6 +1913,129 @@ th {
     transform: scale(1) translateY(0);
   }
 }
+
+/* ========== Prediction Log Calendar ========== */
+
+.modal-prediction-log {
+  max-width: 680px !important;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.calendar-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.calendar-day {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.calendar-day:hover {
+  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.cal-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cal-total {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.cal-rate {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cal-gain {
+  font-size: 12px;
+  text-align: right;
+  font-weight: 600;
+}
+
+/* ---- Day Detail ---- */
+
+.day-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.day-detail-header strong {
+  font-size: 16px;
+}
+
+.day-detail-back {
+  min-height: 28px !important;
+  font-size: 12px !important;
+  padding: 0 10px !important;
+}
+
+.day-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.day-detail-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 36px 64px 36px 72px;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+}
+
+.day-detail-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--line);
+}
+
+.dd-time { color: var(--muted); font-size: 11px; }
+.dd-level { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-dir { font-weight: 600; }
+.dd-pct { font-weight: 600; text-align: right; }
+.dd-result { text-align: center; font-weight: 600; font-size: 11px; }
+.dd-stars { color: var(--gold); font-size: 10px; letter-spacing: 1px; }
+.dd-reason, .dd-review {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--muted);
+  padding-left: 4px;
+}
+.dd-reason { color: rgba(255,255,255,0.5); }
+.dd-review { color: var(--blue); }
 
 /* ========== Celebration Overlay ========== */
 
