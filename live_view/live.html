@@ -1,0 +1,605 @@
+﻿
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BTC Live View</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" type="image/png" href="./character/洁白神圣.png" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <img id="brandAvatar" src="./icon/icon2.png" alt="标题头像" />
+          <div>
+            <strong>BTC Replay Lab</strong>
+            <select id="brandAvatarSelect" aria-label="选择标题头像">
+              <option value="icon">App 图标</option>
+              <option value="active">当前角色</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="hud-actions">
+          <button id="dailyTaskHudBtn" class="hud-button" type="button" aria-label="每日任务">
+            <span class="hud-icon">T</span>
+            <span>任务</span>
+            <i id="dailyTaskDot" class="alert-dot"></i>
+          </button>
+          <button id="updateDataBtn" class="hud-button" type="button" aria-label="更新数据">
+            <span class="hud-icon">&#8635;</span>
+            <span>更新</span>
+          </button>
+          <button id="levelListBtn" class="hud-button" type="button" aria-label="关卡列表">
+            <span class="hud-icon">L</span>
+            <span>关卡</span>
+          </button>
+          <button id="characterChatHudBtn" class="hud-button" type="button" aria-label="角色聊天">
+            <span class="hud-icon">C</span>
+            <span>聊天</span>
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <label class="field compact">
+            <span>周期</span>
+            <select id="timeframeSelect">
+              <option value="source">原始</option>
+              <option value="60000">1m</option>
+              <option value="300000">5m</option>
+              <option value="900000">15m</option>
+              <option value="3600000">1h</option>
+              <option value="14400000">4h</option>
+              <option value="86400000">1d</option>
+              <option value="604800000">1w</option>
+            </select>
+          </label>
+          <label class="check">
+            <input id="hideFutureToggle" type="checkbox" checked />
+            隐藏未来
+          </label>
+          <label class="check">
+            <input id="blindModeToggle" type="checkbox" />
+            盲测
+          </label>
+          <label class="check">
+            <input id="logScaleToggle" type="checkbox" checked />
+            对数
+          </label>
+          <label class="check">
+            <input id="ma20Toggle" type="checkbox" checked />
+            MA20
+          </label>
+          <label class="check">
+            <input id="ma60Toggle" type="checkbox" />
+            MA60
+          </label>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="workspace">
+          <div class="statusbar">
+            <span id="datasetInfo">等待导入 BTC K线 CSV</span>
+            <span id="cursorInfo">-</span>
+          </div>
+
+          <div class="chart-frame" id="chartFrame">
+            <canvas id="chartCanvas"></canvas>
+            <div class="placeholder" id="placeholder">
+              <h1>导入历史 K线，开始回放</h1>
+              <p>支持 timestamp/open/high/low/close/volume，也支持 Binance 原始 kline CSV。</p>
+            </div>
+            <div class="toast" id="toast"></div>
+            <div class="tooltip" id="tooltip"></div>
+          </div>
+
+          <div class="playback">
+            <input id="timeline" type="range" min="0" max="0" value="0" />
+            <div class="playback-row">
+              <button id="firstBtn" type="button">最早</button>
+              <button id="backBtn" type="button">上一根</button>
+              <button id="playBtn" type="button">播放</button>
+              <button id="forwardBtn" type="button">下一根</button>
+              <button id="plusTenBtn" type="button">+10</button>
+              <button id="latestBtn" type="button">最新</button>
+              <button id="randomBtn" type="button">随机</button>
+              <button id="blindRandomBtn" type="button">随机盲测</button>
+              <button id="revealDateBtn" type="button">揭晓日期</button>
+              <label class="field small">
+                <span>速度</span>
+                <select id="speedSelect">
+                  <option value="1">1x</option>
+                  <option value="4">4x</option>
+                  <option value="12" selected>12x</option>
+                  <option value="48">48x</option>
+                  <option value="120">120x</option>
+                </select>
+              </label>
+              <label class="field date-field">
+                <span>跳转</span>
+                <input id="jumpInput" type="datetime-local" />
+              </label>
+              <button id="jumpBtn" type="button">到这里</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="sidepanel">
+          <section class="panel game-panel">
+            <div class="panel-title-row">
+              <h2>训练大厅</h2>
+              <span id="streakValue">0 天</span>
+            </div>
+
+            <div class="player-card">
+              <div>
+                <span id="levelTitle">新手观察员</span>
+                <strong id="levelValue">Lv.1</strong>
+              </div>
+              <div class="xp-track">
+                <div id="xpFill"></div>
+              </div>
+              <small id="xpText">0 / 100 XP</small>
+            </div>
+
+            <div class="character-card">
+              <img id="characterPortrait" src="./character/乐观女孩.png" alt="当前角色" />
+              <div>
+                <span id="characterTitle">BTC姬 · 朝阳派</span>
+                <strong id="characterName">朝野晴</strong>
+                <small id="characterLevel">Lv.1 · 一阶</small>
+                <div class="xp-track compact">
+                  <div id="characterXpFill"></div>
+                </div>
+                <p id="characterText">今天也先看结构，再相信上涨。</p>
+              </div>
+            </div>
+
+            <div id="characterRuleCard" class="rule-card"></div>
+            <div id="characterGrid" class="character-grid"></div>
+            <div id="characterMaterialList" class="material-list"></div>
+            <button id="characterQuestBtn" class="wide" type="button">开启角色试炼</button>
+            <button id="ascensionTrialBtn" class="wide" type="button">开启进阶试炼</button>
+
+            <div class="challenge-card" id="challengeCard">
+              <strong id="challengeTitle">今日开一局</strong>
+              <span id="challengeText">选择一个模式，系统会直接抽取历史行情片段。</span>
+              <div class="choice-grid">
+                <button id="biasLongBtn" type="button" data-bias="long">看多</button>
+                <button id="biasShortBtn" type="button" data-bias="short">看空</button>
+                <button id="biasFlatBtn" type="button" data-bias="flat">观望</button>
+              </div>
+              <div class="button-row">
+                <button id="quickGameBtn" type="button">盲测快局</button>
+                <button id="levelGameBtn" type="button">历史闯关</button>
+                <button id="trendGameBtn" type="button">趋势猎人</button>
+                <button id="trapGameBtn" type="button">假突破</button>
+                <button id="survivalGameBtn" type="button">暴跌生存</button>
+                <button id="revengeGameBtn" type="button">错题复仇</button>
+                <button id="settleGameBtn" type="button">结算本局</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel trade-panel">
+            <h2>下单与风控</h2>
+            <div class="price-line">
+              <span>当前价</span>
+              <strong id="currentPrice">-</strong>
+            </div>
+            <div class="order-grid">
+              <button class="buy" data-side="buy" data-pct="0.25" type="button">买 25%</button>
+              <button class="buy" data-side="buy" data-pct="0.5" type="button">买 50%</button>
+              <button class="buy" data-side="buy" data-pct="1" type="button">全买</button>
+              <button class="sell" data-side="sell" data-pct="0.25" type="button">卖 25%</button>
+              <button class="sell" data-side="sell" data-pct="0.5" type="button">卖 50%</button>
+              <button class="sell" data-side="sell" data-pct="1" type="button">全卖</button>
+              <button class="short" data-side="short" data-pct="0.25" type="button">空 25%</button>
+              <button class="short" data-side="short" data-pct="0.5" type="button">空 50%</button>
+              <button class="short" data-side="short" data-pct="1" type="button">全空</button>
+            </div>
+
+            <div class="risk-grid">
+              <label class="field">
+                <span>止损价</span>
+                <input id="stopLossInput" type="number" min="0" step="0.01" placeholder="例如 62000" />
+              </label>
+              <label class="field">
+                <span>止盈价</span>
+                <input id="takeProfitInput" type="number" min="0" step="0.01" placeholder="例如 72000" />
+              </label>
+              <label class="field">
+                <span>单笔风险 %</span>
+                <input id="riskPctInput" type="number" min="0" step="0.1" value="10" />
+              </label>
+            </div>
+            <div class="button-row">
+              <button id="addStopBtn" type="button">添加止损</button>
+              <button id="addTakeBtn" type="button">添加止盈</button>
+              <button id="attachStopsBtn" type="button">更新止损止盈</button>
+              <button id="clearStopsBtn" type="button">清除风控线</button>
+            </div>
+            <p class="hint">点击添加会按当前价生成风控线，图上的 SL / TP 线也可以直接拖动修改。</p>
+            <div class="button-row">
+              <button id="riskBuyBtn" type="button">按风险买入</button>
+              <button id="riskShortBtn" type="button">按风险做空</button>
+              <button id="closePositionBtn" type="button">平仓</button>
+            </div>
+            <div class="trade-journal">
+              <div class="trade-journal-head">
+                <strong>本笔理由与平仓复盘</strong>
+                <span>切到下一根 K 线会自动清空，避免把上一笔内容带到下一笔。</span>
+              </div>
+              <label class="field">
+                <span>开仓理由</span>
+                <input id="tradeReasonInput" type="text" maxlength="80" placeholder="例如：回踩确认 / 突破续强 / 区间下沿承接" />
+              </label>
+              <label class="field">
+                <span>平仓复盘</span>
+                <textarea id="sessionNotesInput" rows="4" placeholder="例如：为什么在这里平？这笔做对了什么，下一次还要等什么？"></textarea>
+              </label>
+              <div class="field">
+                <span>复盘标签</span>
+                <div class="tag-grid">
+                  <label><input type="checkbox" value="计划内执行" /> 计划内执行</label>
+                  <label><input type="checkbox" value="确认充分" /> 确认充分</label>
+                  <label><input type="checkbox" value="拿仓耐心" /> 拿仓耐心</label>
+                  <label><input type="checkbox" value="过早入场" /> 过早入场</label>
+                  <label><input type="checkbox" value="逆势硬做" /> 逆势硬做</label>
+                  <label><input type="checkbox" value="情绪化操作" /> 情绪化操作</label>
+                </div>
+              </div>
+              <p class="hint">标签既可以记做对的地方，也可以记失误；减仓、平仓和导出记录都会带上当前标签。</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>模拟账户</h2>
+            <div class="account-grid">
+              <label class="field">
+                <span>初始 USDT</span>
+                <input id="initialCashInput" type="number" min="0" step="100" value="10000" />
+              </label>
+              <label class="field">
+                <span>手续费</span>
+                <input id="feeInput" type="number" min="0" step="0.0001" value="0.0004" />
+              </label>
+              <label class="field">
+                <span>杠杆</span>
+                <input id="leverageInput" type="number" min="1" step="1" value="50" />
+              </label>
+            </div>
+            <button id="resetAccountBtn" class="wide" type="button">重置账户</button>
+
+            <div class="metrics extended">
+              <div>
+                <span>权益</span>
+                <strong id="equityValue">-</strong>
+              </div>
+              <div>
+                <span>收益</span>
+                <strong id="pnlValue">-</strong>
+              </div>
+              <div>
+                <span>现金</span>
+                <strong id="cashValue">-</strong>
+              </div>
+              <div>
+                <span>持仓 BTC</span>
+                <strong id="btcValue">-</strong>
+              </div>
+              <div>
+                <span>胜率</span>
+                <strong id="winRateValue">-</strong>
+              </div>
+              <div>
+                <span>最大回撤</span>
+                <strong id="drawdownValue">-</strong>
+              </div>
+              <div>
+                <span>交易数</span>
+                <strong id="tradeCountValue">-</strong>
+              </div>
+              <div>
+                <span>R 倍数</span>
+                <strong id="rValue">-</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>盘中标注</h2>
+            <label class="field">
+              <span>训练标题</span>
+              <input id="sessionNameInput" type="text" maxlength="60" placeholder="例如 4H 顺势突破练习" />
+            </label>
+            <label class="field">
+              <span>当前标注</span>
+              <input id="bookmarkInput" type="text" maxlength="100" placeholder="当下判断、关键位、情绪状态" />
+            </label>
+            <div class="button-row">
+              <button id="addBookmarkBtn" type="button">添加标注</button>
+              <button id="addHlineBtn" type="button">加水平线</button>
+              <button id="clearLinesBtn" type="button">清除线</button>
+            </div>
+            <p class="hint">这里更适合记关键位、情绪和图上标注；平仓复盘已经放到上面的下单区。</p>
+            <div class="list" id="bookmarkList">暂无标注</div>
+          </section>
+
+          <section class="panel">
+            <h2>训练会话</h2>
+            <div class="session-grid">
+              <select id="sessionSelect"></select>
+              <button id="saveSessionBtn" type="button">保存</button>
+              <button id="loadSessionBtn" type="button">载入</button>
+              <button id="deleteSessionBtn" type="button">删除</button>
+            </div>
+            <p class="hint">会话保存交易、标注、笔记和当前位置。历史 K线数据仍需要先导入对应 CSV。</p>
+          </section>
+
+          <section class="panel">
+            <h2>最近成就</h2>
+            <div id="achievementList" class="achievement-list"></div>
+          </section>
+
+          <section class="panel trade-log">
+            <h2>交易记录</h2>
+            <div class="button-row">
+              <button id="exportTradesBtn" type="button">导出交易</button>
+              <button id="exportReportBtn" type="button">导出报告</button>
+              <button id="screenshotBtn" type="button">截图</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>方向</th>
+                    <th>价格</th>
+                    <th>数量</th>
+                    <th>备注</th>
+                  </tr>
+                </thead>
+                <tbody id="tradeRows">
+                  <tr>
+                    <td colspan="5">暂无交易</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="hint">快捷键：空格播放，左右单步，B 全买，S 全卖，C 平仓，M 标注，H 水平线。</p>
+          </section>
+
+          <section class="panel data-import-panel">
+            <h2>数据导入</h2>
+            <label class="file-button wide">
+              <input id="fileInput" type="file" accept=".csv,.txt" />
+              导入 CSV
+            </label>
+            <p class="hint">平时会自动加载默认 BTC 15m 数据，需要换数据时再用这里。</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="settlementModal">
+      <div class="modal settlement-modal">
+        <section class="settlement-main">
+          <div class="panel-title-row">
+            <h2 id="settlementTitle">本局结算</h2>
+            <button id="closeSettlementBtn" type="button">关闭</button>
+          </div>
+          <div class="score-ring">
+            <strong id="settlementScore">0</strong>
+            <span>分</span>
+          </div>
+          <div id="settlementBreakdown" class="settlement-breakdown"></div>
+          <div id="settlementRewards" class="achievement-list"></div>
+          <div class="button-row">
+            <button id="nextChallengeBtn" type="button">再来一局</button>
+            <button id="reviewMistakeBtn" type="button">错题复仇</button>
+          </div>
+        </section>
+        <aside class="settlement-review-panel">
+          <div class="review-character-head">
+            <img id="settlementReviewPortrait" src="./character/乐观女孩.png" alt="复盘角色" />
+            <div>
+              <strong id="settlementReviewTitle">角色点评</strong>
+              <span id="settlementReviewStatus">结算后会自动生成。</span>
+            </div>
+          </div>
+          <div id="settlementReviewText" class="review-character-text">正在准备本局交易记录、评分和复盘笔记。</div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="dailyTaskModal">
+      <div class="modal">
+        <div class="panel-title-row">
+          <h2>每日任务</h2>
+          <button id="closeDailyTaskBtn" type="button">关闭</button>
+        </div>
+        <div id="dailyTaskList" class="task-list"></div>
+        <div class="daily-reward">
+          <div>
+            <strong>每日奖励</strong>
+            <span id="dailyRewardText">完成全部任务后领取随机进阶材料。</span>
+          </div>
+          <button id="claimDailyRewardBtn" type="button">领取材料</button>
+        </div>
+        <div class="calendar-controls">
+          <button id="prevCalendarMonthBtn" type="button">上月</button>
+          <select id="dailyCalendarYearSelect" aria-label="选择年份"></select>
+          <select id="dailyCalendarMonthSelect" aria-label="选择月份"></select>
+          <button id="nextCalendarMonthBtn" type="button">下月</button>
+        </div>
+        <div id="dailyCalendar" class="daily-calendar"></div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="levelModal">
+      <div class="modal wide-modal">
+        <div class="panel-title-row">
+          <div class="level-modal-heading">
+            <h2>历史闯关</h2>
+            <div class="level-mode-switch">
+              <button id="levelModeDailyBtn" type="button" data-level-span="daily">1天一关</button>
+              <button id="levelModeWeeklyBtn" type="button" data-level-span="weekly">7天一关</button>
+              <button id="levelModeGameDailyBtn" type="button" data-level-span="game_daily">1天游戏</button>
+              <button id="levelModeGameWeeklyBtn" type="button" data-level-span="game_weekly">7天游戏</button>
+              <button id="levelModePredictionBtn" type="button" data-level-span="prediction">超级预测</button>
+            </div>
+          </div>
+          <button id="closeLevelModalBtn" type="button">关闭</button>
+        </div>
+        <div id="levelSummary" class="level-summary"></div>
+        <div class="level-pager">
+          <button id="prevLevelPageBtn" type="button">上一页</button>
+          <select id="levelPageSelect" aria-label="选择关卡页"></select>
+          <button id="nextLevelPageBtn" type="button">下一页</button>
+        </div>
+        <div id="levelRows" class="level-list"></div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="achievementModal">
+      <div class="modal wide-modal achievement-modal-shell">
+        <div class="panel-title-row">
+          <h2>成就图鉴</h2>
+          <button id="closeAchievementBtn" type="button">关闭</button>
+        </div>
+        <div id="achievementAllList" class="achievement-all-list"></div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="characterChatModal">
+      <div class="modal chat-modal">
+        <div class="panel-title-row">
+          <h2>角色对话</h2>
+          <div class="chat-title-actions">
+            <select id="chatCharacterSelect" aria-label="选择聊天角色"></select>
+            <button id="closeCharacterChatBtn" type="button">关闭</button>
+          </div>
+        </div>
+        <div id="chatStatus" class="chat-status">本地对话服务检查中...</div>
+        <div class="chat-stage">
+          <div class="chat-portrait-wrap">
+            <img id="chatPortrait" src="./character/乐观女孩.png" alt="聊天角色立绘" />
+          </div>
+          <div class="chat-scene">
+            <div id="chatLog" class="chat-log"></div>
+            <div class="visual-dialogue">
+              <strong id="chatSpeaker">朝野晴</strong>
+              <div id="chatStreamingText"></div>
+            </div>
+            <form id="chatForm" class="chat-form">
+              <textarea id="chatInput" rows="3" placeholder="和角色说点什么。Enter 发送，Shift+Enter 换行。"></textarea>
+              <div class="button-row">
+                <button id="chatSendBtn" type="submit">发送</button>
+                <button id="chatClearBtn" type="button">清空对话</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="predictionLogModal">
+      <div class="modal modal-prediction-log">
+        <div class="panel-title-row">
+          <h2>预测记录</h2>
+          <button id="closePredictionLogModalBtn" type="button">关闭</button>
+        </div>
+        <div id="predictionLogCalendar" class="calendar-grid"></div>
+        <div id="predictionDayDetail" class="day-detail" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="prediction-overlay" id="predictionOverlay">
+      <div class="prediction-card" id="predictionCard">
+        <div class="prediction-header">
+          <div class="prediction-header-inner">
+            <strong>超级预测</strong>
+            <button id="predictionCloseBtn" class="prediction-close-btn" type="button" title="关闭">&times;</button>
+          </div>
+          <span id="predictionTimeRange">-</span>
+        </div>
+        <div class="prediction-body" id="predictionBody">
+          <p class="prediction-hint">这 12 小时 BTC 会涨还是会跌？</p>
+          <div class="prediction-buttons">
+            <button id="predictionUpBtn" class="prediction-up" type="button">看涨</button>
+            <button id="predictionDownBtn" class="prediction-down" type="button">看跌</button>
+          </div>
+          <textarea id="predictionReasonInput" class="prediction-reason" placeholder="判断理由（可选）" rows="2"></textarea>
+        </div>
+        <div class="prediction-result" id="predictionResult" style="display:none">
+          <div class="prediction-move" id="predictionMove">-</div>
+          <div class="prediction-outcome" id="predictionOutcome">-</div>
+          <div class="prediction-stars" id="predictionStarsDisplay">-</div>
+          <div class="prediction-reason-shown" id="predictionReasonShown"></div>
+          <textarea id="predictionReviewInput" class="prediction-reason" placeholder="复盘笔记（可选）" rows="2"></textarea>
+          <div class="prediction-actions">
+            <button id="predictionRandomNextBtn" class="prediction-next" type="button">随机下一关</button>
+            <button id="predictionRetryBtn" type="button">重来</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="celebration-overlay" id="celebrationOverlay">
+      <div class="celebration-bg"></div>
+      <div class="celebration-container" id="celebrationContainer"></div>
+      <button class="celebration-close" id="celebrationCloseBtn" type="button">点击继续</button>
+    </div>
+
+    <div id="achievementAllBtn" style="display:none"></div>
+    <i id="achievementDot" style="display:none"></i>
+    <div id="closeAchievementBtn" style="display:none"></div>
+    <div id="achievementModal" style="display:none"></div>
+    <div id="achievementAllList" style="display:none"></div>
+    <script src="./src/config/constants.js"></script>
+    <script>
+      window.BtcReplay.constants.DEFAULT_DATA_URL = "./live_view/data/BTCUSDT-15m.csv";
+      window.BtcReplay.constants.DEFAULT_BINARY_DATA_URL = "./live_view/data/BTCUSDT-15m.csv";
+    </script>
+    <script src="./src/content/achievements.js"></script>
+    <script src="./src/content/game-content.js"></script>
+    <script src="./src/ui/dom.js"></script>
+    <script src="./src/core/deps.js"></script>
+    <script src="./src/core/models.js"></script>
+    <script src="./src/core/state.js"></script>
+    <script src="./src/core/utils.js"></script>
+    <script src="./src/data/candles.js"></script>
+    <script src="./src/ui/helpers.js"></script>
+    <script src="./src/game/characters.js"></script>
+    <script src="./src/game/levels.js"></script>
+    <script src="./src/data/storage.js"></script>
+    <script src="./src/replay/navigation.js"></script>
+    <script src="./src/trade/trade.js"></script>
+    <script src="./src/chart/chart.js"></script>
+    <script src="./src/game/celebration.js"></script>
+    <script src="./src/game/challenges.js"></script>
+    <script src="./src/game/daily.js"></script>
+    <script src="./src/game/level-modal.js"></script>
+    <script src="./src/game/achievements.js"></script>
+    <script src="./src/game/chat.js"></script>
+    <script src="./src/game/ui.js"></script>
+    <script src="./src/features/annotations.js"></script>
+    <script src="./src/features/sessions.js"></script>
+    <script src="./src/features/export.js"></script>
+    <script>var _a=autoLoadDefaultCsv;autoLoadDefaultCsv=async function(){await _a();if(state.candles.length)revealTo(state.candles.length-1,true)}</script>
+    <script src="./src/app/init.js"></script>
+    <script>
+      document.getElementById("updateDataBtn").onclick=async function(){
+        var b=this,sp=b.querySelectorAll("span");b.disabled=true;sp[1].textContent="...";
+        var r=await fetch("/api/update"),d=await r.json();
+        if(d.ok){var t=await(await fetch("./live_view/data/BTCUSDT-15m.csv")).text();loadCandles(parseCsv(t),"BTCUSDT-15m.csv");revealTo(state.candles.length-1,true)}
+        else showToast(d.error||"fail");
+        b.disabled=false;sp[1].textContent="更新"
+      }
+    </script>
+  </body>
+</html>

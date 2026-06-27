@@ -90,6 +90,14 @@ function normalizeLevelModeBucket(bucket = {}, key = "", label = "") {
     archivedLegacy: Boolean(bucket.archivedLegacy),
     createdAt: bucket.createdAt || Date.now(),
     updatedAt: bucket.updatedAt || bucket.createdAt || Date.now(),
+    _streakAll: bucket._streakAll || 0,
+    _bestStreakAll: bucket._bestStreakAll || 0,
+    _streakDay: bucket._streakDay || 0,
+    _bestStreakDay: bucket._bestStreakDay || 0,
+    _streakWeek: bucket._streakWeek || 0,
+    _bestStreakWeek: bucket._bestStreakWeek || 0,
+    _lastDate: bucket._lastDate || "",
+    _lastWeek: bucket._lastWeek || "",
   };
 }
 

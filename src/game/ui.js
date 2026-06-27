@@ -105,10 +105,11 @@ function renderCharacterPanel() {
     `;
   }).join("");
   if (character.predictionOnly) {
+    const streak = charState._predictionStreak || 0;
     els.characterMaterialList.innerHTML = `
       <div class="material-item"><span>${escapeHtml(character.material)}</span><strong>${charState.materials}/${ascensionNeed}</strong></div>
       <div class="material-item"><span>进阶门槛</span><strong>连胜 8 次获得材料</strong></div>
-      <div class="material-item"><span>预测连胜</span><strong>${trialSuccesses}/10 成功</strong></div>
+      <div class="material-item"><span>当前连胜</span><strong>${streak}/8</strong></div>
       <div class="material-item"><span>培养风格</span><strong>${escapeHtml(character.style)}</strong></div>
     `;
   } else {

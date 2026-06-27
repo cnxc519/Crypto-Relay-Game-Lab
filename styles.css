@@ -1991,6 +1991,11 @@ th {
   font-size: 16px;
 }
 
+.day-ratio {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .day-detail-back {
   min-height: 28px !important;
   font-size: 12px !important;

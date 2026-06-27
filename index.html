@@ -214,7 +214,7 @@
               </label>
               <label class="field">
                 <span>单笔风险 %</span>
-                <input id="riskPctInput" type="number" min="0" step="0.1" value="1" />
+                <input id="riskPctInput" type="number" min="0" step="0.1" value="10" />
               </label>
             </div>
             <div class="button-row">
@@ -226,6 +226,7 @@
             <p class="hint">点击添加会按当前价生成风控线，图上的 SL / TP 线也可以直接拖动修改。</p>
             <div class="button-row">
               <button id="riskBuyBtn" type="button">按风险买入</button>
+              <button id="riskShortBtn" type="button">按风险做空</button>
               <button id="closePositionBtn" type="button">平仓</button>
             </div>
             <div class="trade-journal">
@@ -266,6 +267,10 @@
               <label class="field">
                 <span>手续费</span>
                 <input id="feeInput" type="number" min="0" step="0.0001" value="0.0004" />
+              </label>
+              <label class="field">
+                <span>杠杆</span>
+                <input id="leverageInput" type="number" min="1" step="1" value="50" />
               </label>
             </div>
             <button id="resetAccountBtn" class="wide" type="button">重置账户</button>

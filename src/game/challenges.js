@@ -47,6 +47,7 @@ function startChallenge(type = "blind") {
     showToast("先导入历史 K线，游戏才能发牌。");
     return;
   }
+  state.game._clearEyeLastStep = 0;
   const base = CHALLENGE_TYPES[type] || CHALLENGE_TYPES.blind;
   const config = { ...base, key: type };
   const startIndex = chooseChallengeStart(config);
@@ -261,6 +262,19 @@ function startGameLevelChallenge(levelIndex = null) {
   showToast(`↑ 做多 / ↓ 做空，每按一次 K 线前进一格。`);
 }
 
+function randomLevelChallenge() {
+  const mode = currentLevelSpanMode();
+  const levels = generateLevelList(mode);
+  if (!levels.length) {
+    showToast("请先加载数据。");
+    return;
+  }
+  const level = levels[Math.floor(Math.random() * levels.length)];
+  if (mode.prediction) startPrediction(level.index);
+  else if (mode.game) startGameLevelChallenge(level.index);
+  else startLevelChallenge(level.index);
+}
+
 function startPrediction(levelIndex) {
   if (!ensureLevelTimeframe()) return;
   const mode = levelSpanModeById("prediction");
@@ -371,18 +385,16 @@ function skipPrediction() {
   const p = state.game._prediction;
   if (!p || els.predictionBody.style.display === "none") return;
   const reason = els.predictionReasonInput.value.trim();
-  if (reason) {
-    appendPredictionLog({
-      time: Date.now(),
-      levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \\d+ 关$/, "")}`,
-      direction: "跳过",
-      reason,
-      correct: null,
-      movePct: p.movePct,
-      stars: 0,
-      skip: true,
-    });
-  }
+  appendPredictionLog({
+    time: Date.now(),
+    levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \\d+ 关$/, "")}`,
+    direction: "跳过",
+    reason,
+    correct: null,
+    movePct: p.movePct,
+    stars: 0,
+    skip: true,
+  });
   showPredictionResult(null, p.movePct, 0, reason);
 }
 
@@ -393,17 +405,15 @@ function submitPrediction(direction) {
   const correct = (direction === "up" && p.movePct > 0) || (direction === "down" && p.movePct < 0);
   const stars = predictionStars(correct, p.movePct);
   recordPredictionResult(direction, reason, correct, stars);
-  if (reason) {
-    appendPredictionLog({
-      time: Date.now(),
-      levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \\d+ 关$/, "")}`,
-      direction: direction === "up" ? "看涨" : "看跌",
-      reason,
-      correct,
-      movePct: p.movePct,
-      stars,
-    });
-  }
+  appendPredictionLog({
+    time: Date.now(),
+    levelTitle: `12h · ${p.level.title.replace(/^[^0-9]*/, "").replace(/ 第 \\d+ 关$/, "")}`,
+    direction: direction === "up" ? "看涨" : "看跌",
+    reason,
+    correct,
+    movePct: p.movePct,
+    stars,
+  });
   showPredictionResult(correct, p.movePct, stars, reason);
 }
 
@@ -461,6 +471,11 @@ function recordPredictionResult(direction, reason, correct, stars) {
       levelMode._streakWeek = 0;
     }
     charState.materials += materialGain;
+    charState._predictionStreak = levelMode._streakAll || 0;
+    if (materialGain) {
+      saveGameProfile();
+      showToast(`连胜 ${ascensionStreak}！获得 1 个${character.material}`);
+    }
 
     const atCap = characterLevelFromXp(charState.xp, charState.stage) >= charState.stage * 200;
     const trialSuccesses = charState.trialWindow.filter(Boolean).length;
@@ -468,6 +483,8 @@ function recordPredictionResult(direction, reason, correct, stars) {
     if (charState.stage < 5 && atCap && charState.materials >= neededMaterials && trialSuccesses >= 3) {
       charState.stage += 1;
       charState.materials -= neededMaterials;
+      saveGameProfile();
+      showToast(`${character.name} 进阶至 ${stageName(charState.stage)}！`);
     }
 
     state.game.lastCharacterGain = {
@@ -542,21 +559,28 @@ function showPredictionResult(correct, movePct, stars, reason) {
   els.predictionResult.style.display = "";
 }
 
+function predictionLogData() {
+  if (!state.game.profile.predictionLog) {
+    const legacy = localStorage.getItem("btcReplayLab.predictionLog");
+    state.game.profile.predictionLog = legacy ? JSON.parse(legacy) : [];
+    if (legacy) { localStorage.removeItem("btcReplayLab.predictionLog"); saveGameProfile(); }
+  }
+  return state.game.profile.predictionLog;
+}
+
 function appendPredictionLog(entry) {
-  const stored = localStorage.getItem("btcReplayLab.predictionLog");
-  const log = stored ? JSON.parse(stored) : [];
+  const log = predictionLogData();
   log.unshift(entry);
-  if (log.length > 500) log.length = 500;
-  localStorage.setItem("btcReplayLab.predictionLog", JSON.stringify(log));
+  if (log.length > 50000) log.length = 50000;
+  saveGameProfile();
 }
 
 function saveReview() {
   const review = els.predictionReviewInput.value.trim();
   if (!review) return;
-  const stored = localStorage.getItem("btcReplayLab.predictionLog");
-  const log = stored ? JSON.parse(stored) : [];
+  const log = predictionLogData();
   if (log.length) log[0].review = review;
-  localStorage.setItem("btcReplayLab.predictionLog", JSON.stringify(log));
+  saveGameProfile();
 }
 
 function randomPrediction() {
@@ -600,15 +624,15 @@ function openPredictionLog() {
 }
 
 function predictionLogEntries() {
-  const stored = localStorage.getItem("btcReplayLab.predictionLog");
-  return stored ? JSON.parse(stored) : [];
+  return predictionLogData();
 }
 
 function renderPredictionCalendar() {
   const entries = predictionLogEntries();
   const grouped = {};
   for (const e of entries) {
-    const dk = new Date(e.time).toISOString().slice(0, 10);
+    if (e.skip) continue;
+    const dk = new Date(e.time + 8 * 3600000).toISOString().slice(0, 10);
     if (!grouped[dk]) grouped[dk] = { total: 0, correct: 0, gain: 0, entries: [] };
     grouped[dk].total++;
     if (e.correct) grouped[dk].correct++;
@@ -640,11 +664,17 @@ function renderPredictionCalendar() {
 }
 
 function renderPredictionDay(dk) {
-  const entries = predictionLogEntries().filter((e) => new Date(e.time).toISOString().slice(0, 10) === dk);
+  const entries = predictionLogEntries().filter((e) => new Date(e.time + 8 * 3600000).toISOString().slice(0, 10) === dk);
   if (!entries.length) return;
+  const profits = entries.filter((e) => e.correct).map((e) => Math.abs(e.movePct || 0));
+  const losses = entries.filter((e) => e.correct === false).map((e) => Math.abs(e.movePct || 0));
+  const avgWin = profits.length ? (profits.reduce((a, b) => a + b, 0) / profits.length * 100).toFixed(2) : "-";
+  const avgLoss = losses.length ? (losses.reduce((a, b) => a + b, 0) / losses.length * 100).toFixed(2) : "-";
+  const ratio = profits.length && losses.length ? (Number(avgWin) / Number(avgLoss)).toFixed(2) : "-";
   els.predictionDayDetail.innerHTML = `
     <div class="day-detail-header">
       <strong>${dk}</strong>
+      <span class="day-ratio">盈 ${avgWin}% / 亏 ${avgLoss}% · 盈亏比 ${ratio}</span>
       <button type="button" class="day-detail-back" id="dayDetailBackBtn">返回日历</button>
     </div>
     <div class="day-detail-list">
@@ -701,6 +731,54 @@ function challengeTypeLabel(type) {
 
 function pickSettlementReviewerId(active) {
   return state.game.profile.activeCharacter || CHARACTER_CONFIG[0].id;
+}
+
+function copyTradesToClipboard(trades) {
+  if (!trades || !trades.length) return;
+  const header = "时间\t方向\t价格\t数量\t止损\t止盈\t已实现盈亏\tR\t自动\t理由\t复盘\t标签";
+  const rows = trades.map((t) => [
+    formatTime(t.time),
+    tradeSideLabel(t),
+    Number(t.price).toFixed(2),
+    Number(t.qty).toFixed(8),
+    t.stopPrice ? Number(t.stopPrice).toFixed(2) : "",
+    t.takePrice ? Number(t.takePrice).toFixed(2) : "",
+    Number.isFinite(t.realizedPnl) ? Number(t.realizedPnl).toFixed(2) : "",
+    Number.isFinite(t.r) ? Number(t.r).toFixed(2) : "",
+    t.auto ? "是" : "",
+    (t.reason || "").replace(/\t/g, " "),
+    (t.review || "").replace(/\t/g, " "),
+    (t.tags || []).join("/"),
+  ].join("\t"));
+  const text = [header, ...rows].join("\n");
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => showToast(`已复制 ${trades.length} 笔交易到剪贴板`),
+        () => fallbackCopy(text, trades.length),
+      );
+    } else {
+      fallbackCopy(text, trades.length);
+    }
+  } catch {
+    fallbackCopy(text, trades.length);
+  }
+}
+
+function fallbackCopy(text, count) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast(`已复制 ${count} 笔交易到剪贴板`);
+  } catch {
+    showToast("交易记录复制失败");
+  }
 }
 
 function settlementTradesForReport(trades) {
@@ -857,7 +935,6 @@ function finishChallenge(reason = "manual") {
     ...achievementSignals,
   });
 
-  state.hideFuture = false;
   state.dateRevealed = true;
   state.blindMode = false;
   state.currentIndex = endIndex;
@@ -925,6 +1002,7 @@ function finishChallenge(reason = "manual") {
   syncTimeline();
   render();
   showSettlement();
+  copyTradesToClipboard(trades);
   const celebrations = collectCelebrationEvents();
   if (celebrations.length) {
     window.setTimeout(() => showCelebrations(celebrations), 600);

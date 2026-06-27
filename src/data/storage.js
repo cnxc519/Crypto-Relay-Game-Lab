@@ -11,7 +11,8 @@ function saveSettings() {
     brandAvatarChoice: state.brandAvatarChoice,
     initialCash: Number(els.initialCashInput.value) || 10_000,
     fee: Number(els.feeInput.value) || 0,
-    riskPct: Number(els.riskPctInput.value) || 1,
+    riskPct: Number(els.riskPctInput.value) || 10,
+    leverage: Number(els.leverageInput.value) || 50,
   };
   try {
     localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
@@ -131,7 +132,8 @@ function loadSettings() {
     state.brandAvatarChoice = settings.brandAvatarChoice ?? state.brandAvatarChoice;
     els.initialCashInput.value = settings.initialCash ?? 10_000;
     els.feeInput.value = settings.fee ?? 0.0004;
-    els.riskPctInput.value = settings.riskPct ?? 1;
+    els.riskPctInput.value = settings.riskPct ?? 10;
+    els.leverageInput.value = settings.leverage ?? 50;
   } catch {
     // Ignore invalid saved settings.
   }

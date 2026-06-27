@@ -76,10 +76,11 @@ function bindEvents() {
   els.addStopBtn.addEventListener("click", () => addRiskLine("stop"));
   els.addTakeBtn.addEventListener("click", () => addRiskLine("take"));
   els.riskBuyBtn.addEventListener("click", executeRiskBuy);
+  els.riskShortBtn.addEventListener("click", executeRiskShort);
   els.closePositionBtn.addEventListener("click", () => closePosition());
   els.attachStopsBtn.addEventListener("click", setStopsFromInputs);
   els.clearStopsBtn.addEventListener("click", clearStops);
-  [els.feeInput, els.riskPctInput, els.initialCashInput].forEach((input) => {
+  [els.feeInput, els.riskPctInput, els.initialCashInput, els.leverageInput].forEach((input) => {
     input.addEventListener("change", saveSettings);
   });
 
@@ -150,7 +151,7 @@ function bindEvents() {
     const randBtn = event.target.closest("#levelRandomTestBtn");
     if (randBtn) {
       closeLevelModal();
-      randomPrediction();
+      randomLevelChallenge();
     }
     const logBtn = event.target.closest("#predictionLogBtn");
     if (logBtn) {
@@ -412,6 +413,19 @@ function bindEvents() {
       togglePlayback();
     } else if (event.code === "ArrowRight") {
       event.preventDefault();
+      const active = state.game.active;
+      if (active && state.game.profile.activeCharacter === "clear_eye") {
+        const now = Date.now();
+        const last = state.game._clearEyeLastStep || 0;
+        if (now - last < 5000) {
+          const wait = Math.ceil((5000 - (now - last)) / 1000);
+          showToast(`观月澈：还需等待 ${wait}s 才能推进下一根。`);
+          return;
+        }
+        state.game._clearEyeLastStep = now;
+        stepBy(1);
+        return;
+      }
       stepBy(event.ctrlKey || event.metaKey ? 50 : event.shiftKey ? 10 : 1);
     } else if (event.code === "ArrowLeft") {
       event.preventDefault();

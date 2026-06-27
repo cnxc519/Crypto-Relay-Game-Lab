@@ -29,6 +29,31 @@ function buildSession() {
   };
 }
 
+function autoSaveSession() {
+  const active = state.game.active;
+  if (!active) return;
+  const now = new Date();
+  const practiceTime = now.toLocaleString("zh-CN", { hour12: false }).replace(/\//g, "-").replace(/:/g, "").replace(/\s+/g, "_");
+  const candleTime = active.startTime
+    ? new Date(active.startTime).toLocaleString("zh-CN", { hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(/\//g, "-").replace(/:/g, "").replace(/\s+/g, "_")
+    : "unknown";
+  const session = buildSession();
+  session.name = `${practiceTime}__${candleTime}`;
+  session.id = uniqueId("auto");
+  const sessions = readSessions();
+  sessions.unshift(session);
+  if (sessions.length > 200) sessions.length = 200;
+  writeSessions(sessions);
+
+  try {
+    fetch("/api/save-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(session),
+    }).catch(() => {});
+  } catch (_) {}
+}
+
 function saveSession() {
   const session = buildSession();
   const sessions = readSessions();

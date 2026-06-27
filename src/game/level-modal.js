@@ -71,6 +71,7 @@ function renderLevelModal() {
       <div><span>总挑战</span><strong>${stats.attempts}</strong></div>
       <div><span>最佳收益</span><strong>${(stats.bestReturn * 100).toFixed(2)}%</strong></div>
     `;
+    els.levelSummary.innerHTML += `<div class="level-summary-action"><div class="summary-center"><button id="levelRandomTestBtn" type="button" class="random-test-btn">随机测试</button></div></div>`;
   }
   if (!levels.length) {
     els.levelRows.innerHTML = `<div class="level-row"><div><strong>暂无关卡</strong><span>请导入覆盖 2020 年后的 15m 数据，当前模式为 ${escapeHtml(mode.label)}。</span></div></div>`;

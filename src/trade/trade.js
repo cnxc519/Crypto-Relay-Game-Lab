@@ -14,6 +14,11 @@ function feeRate() {
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
+function leverage() {
+  const value = Number(els.leverageInput?.value);
+  return Number.isFinite(value) && value >= 1 ? value : 1;
+}
+
 function currentCandle() {
   return state.candles[state.currentIndex] || null;
 }
@@ -202,22 +207,7 @@ function validateCharacterTrade(side, options = {}) {
   }
 
   if (character.id === "clear_eye" && opening) {
-    if (!state.game.active.bias) {
-      showToast(`${character.name}：先选看多、看空或观望，再决定要不要动手。`);
-      return false;
-    }
-    if (state.game.active.bias === "flat") {
-      showToast(`${character.name}：你选了观望，这局就练不出手。`);
-      return false;
-    }
-    if ((state.game.active.bias === "long" && side !== "buy") || (state.game.active.bias === "short" && side !== "short")) {
-      showToast(`${character.name}：开仓方向必须和你先选的判断一致。`);
-      return false;
-    }
-    if (activeEntries.length >= 1) {
-      showToast(`${character.name}：这局只允许一次主动开仓，练少交易。`);
-      return false;
-    }
+    // 观月澈：不再限制交易方向/次数，改为训练时右键推进 K 线每 5s 冷却一次（见 init.js）。
   }
 
   if (character.id === "kind_saint" && opening) {
@@ -259,7 +249,7 @@ function executeTrade(side, pct, options = {}) {
 
   if (action === "buy") {
     const requestedSpend = options.spend ?? state.account.cash * pct;
-    const spend = clamp(requestedSpend, 0, state.account.cash);
+    const spend = clamp(requestedSpend, 0, Math.max(0, state.account.cash) * leverage());
     if (spend <= 0 || price <= 0) return null;
     const feeCost = spend * fee;
     const qty = (spend - feeCost) / price;
@@ -298,7 +288,7 @@ function executeTrade(side, pct, options = {}) {
 
   if (action === "short") {
     const equity = Math.max(0, accountEquity(price));
-    const gross = options.notional ?? equity * pct;
+    const gross = clamp(options.notional ?? equity * pct, 0, equity * leverage());
     if (gross <= 0 || price <= 0) return null;
     const qty = gross / price;
     const feeCost = gross * fee;
@@ -458,17 +448,50 @@ function executeRiskBuy() {
   }
   const takePrice = activeTakeFromInput();
   const riskPct = Number(els.riskPctInput.value);
+  const lev = leverage();
   const equity = accountEquity(candle.close);
-  const riskAmount = equity * (Number.isFinite(riskPct) ? riskPct : 1) / 100;
+  const riskAmount = equity * (Number.isFinite(riskPct) ? riskPct : 10) / 100;
   const qty = riskAmount / (candle.close - stopPrice);
-  const spend = qty * candle.close / Math.max(0.000001, 1 - feeRate());
+  const notional = qty * candle.close;
+  const maxNotional = Math.max(0, state.account.cash) * lev;
+  const spend = Math.min(notional / Math.max(0.000001, 1 - feeRate()), maxNotional);
   const trade = executeTrade("buy", 0, {
     spend,
     stopPrice,
     takePrice,
-    reason: els.tradeReasonInput.value.trim() || `按 ${riskPct || 1}% 风险买入`,
+    reason: els.tradeReasonInput.value.trim() || `按 ${riskPct || 10}% 风险 ${lev}x 买入`,
   });
-  if (trade) showToast(`已按风险买入，理论风险约 $${money.format(trade.riskAmount)}`);
+  if (trade) showToast(`已按风险买入 ${lev}x，理论风险约 $${money.format(trade.riskAmount)}`);
+}
+
+function executeRiskShort() {
+  const candle = currentCandle();
+  if (!candle) return;
+  if (positionSide() === "long") {
+    showToast("先平多仓，再按风险做空。");
+    return;
+  }
+  const stopPrice = activeStopFromInput();
+  if (!stopPrice || stopPrice <= candle.close) {
+    showToast("按风险做空需要填写高于当前价的止损价");
+    return;
+  }
+  const takePrice = activeTakeFromInput();
+  const riskPct = Number(els.riskPctInput.value);
+  const lev = leverage();
+  const equity = accountEquity(candle.close);
+  const riskAmount = equity * (Number.isFinite(riskPct) ? riskPct : 10) / 100;
+  const qty = riskAmount / (stopPrice - candle.close);
+  const notional = qty * candle.close;
+  const maxNotional = Math.max(0, equity) * lev;
+  const spend = Math.min(notional, maxNotional);
+  const trade = executeTrade("short", 0, {
+    notional: spend,
+    stopPrice,
+    takePrice,
+    reason: els.tradeReasonInput.value.trim() || `按 ${riskPct || 10}% 风险 ${lev}x 做空`,
+  });
+  if (trade) showToast(`已按风险做空 ${lev}x，理论风险约 $${money.format(trade.riskAmount)}`);
 }
 
 function checkAutoExit(fromIndex, toIndex) {

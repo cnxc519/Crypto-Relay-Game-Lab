@@ -205,6 +205,7 @@ function createGameProfile() {
     achievementSeenCount: 0,
     recentAchievements: [],
     activeCharacter: "btc_hime",
+    predictionLog: [],
     characters: Object.fromEntries(CHARACTER_CONFIG.map((character) => [character.id, createCharacterState()])),
     daily: createDailyProgress(),
     dailyHistory: {},
