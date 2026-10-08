@@ -20,6 +20,10 @@ from pathlib import Path
 
 PORT = 8766
 ROOT = Path(__file__).resolve().parent.parent  # BTC-all/
+# start.bat launches from live_view/, so make the shared server module importable.
+sys.path.insert(0, str(ROOT))
+from local_server import StaticAssetHandler
+
 DATA_DIR = Path(__file__).resolve().parent / "data"
 CSV_PATH = DATA_DIR / "BTCUSDT-15m.csv"
 BIN_PATH = DATA_DIR / "BTCUSDT-15m.bin"
@@ -202,7 +206,7 @@ def update_data():
     return {"ok": True, "added": new_rows, "total": total, "msg": f"Added {new_rows} candles. Total: {total}."}
 
 
-class Handler(http.server.SimpleHTTPRequestHandler):
+class Handler(StaticAssetHandler):
     extensions_map = {
         **http.server.SimpleHTTPRequestHandler.extensions_map,
         ".js": "application/javascript; charset=utf-8",
@@ -237,10 +241,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             result = update_data()
             self.send_json(200 if result["ok"] else 500, result)
             return
-        # Rewrite / to live.html
-        if self.path == "/" or self.path == "/index.html":
-            self.path = "/live_view/live.html"
         return super().do_GET()
+
+    def send_head(self):
+        # Keep the live entry point consistent for both GET and HEAD requests.
+        path, separator, query = self.path.partition("?")
+        if path in {"/", "/index.html"}:
+            self.path = "/live_view/live.html" + separator + query
+        return super().send_head()
 
     def do_POST(self):
         if self.path == "/api/chat":

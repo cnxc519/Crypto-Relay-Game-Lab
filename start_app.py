@@ -20,6 +20,8 @@ import webbrowser
 import errno
 from pathlib import Path
 
+from local_server import StaticAssetHandler
+
 
 PORT = 8765
 DEEPSEEK_MODEL = "deepseek-v4-flash"
@@ -40,7 +42,7 @@ def read_deepseek_key(root: Path) -> str:
     return ""
 
 
-class Handler(http.server.SimpleHTTPRequestHandler):
+class Handler(StaticAssetHandler):
     extensions_map = {
         **http.server.SimpleHTTPRequestHandler.extensions_map,
         ".js": "application/javascript; charset=utf-8",

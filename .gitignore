@@ -1,5 +1,39 @@
-.deepseek_api_key
-deepseek_api_key.txt
+# Local credentials and environment configuration
+.deepseek_api_key*
+deepseek_api_key*
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python environments and generated caches
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local editor / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# New local sessions and exports; existing published prediction logs stay tracked
+/session_records/*
+!/session_records/.gitkeep
+btc-replay-trades*.csv
+btc-replay-report*.md
+btc-replay-chart*.png

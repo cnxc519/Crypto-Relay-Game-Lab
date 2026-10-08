@@ -76,6 +76,20 @@ timestamp,open,high,low,close,volume
 
 想从小周期聚合到大周期，建议导入 `15m` 或更小周期的数据。例如导入 `15m` 后可以切到 `1h / 4h / 1d / 1w`。
 
+## 本地配置与文件访问
+
+角色聊天可通过系统环境变量 `DEEPSEEK_API_KEY`，或项目根目录的 `.deepseek_api_key` / `deepseek_api_key.txt` 配置密钥。密钥文件和常见 Python 虚拟环境已列入 `.gitignore`。程序不会自动加载 `.env` 文件；不要把真实密钥写入示例配置、源码或提交记录。
+
+两个启动器仅监听 `127.0.0.1`，只提供页面、脚本、图片、行情数据及已公开的预测日志。密钥、环境配置、Git 元数据、服务器源码和目录列表不通过 HTTP 提供。新增页面资源若不在现有范围内，需要同步更新 `local_server.py` 的静态资源规则。
+
+仓库保留现有的预测日志和记录注入脚本。新导出的交易 CSV、复盘 Markdown、图表截图及 `session_records/` 下的本地会话默认忽略；浏览器中的游戏进度、聊天和会话仍保存在本机 `localStorage`。
+
+可运行以下命令检查两个启动器的静态文件访问限制，无需外网或真实 API 密钥：
+
+```powershell
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
 ## 下载 BTCUSDT 历史数据
 
 脚本不需要第三方依赖，使用 Binance 的公开历史归档和可选 API 尾部数据。脚本会自动把 Binance 归档中可能出现的微秒时间戳统一转换成毫秒时间戳。
