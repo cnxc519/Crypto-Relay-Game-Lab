@@ -31,7 +31,10 @@ Thumbs.db
 Desktop.ini
 *.lnk
 
-# New local sessions and exports; existing published prediction logs stay tracked
+# Local practice records, sessions, and exports
+pred_log.csv
+pred_log.json
+/inject_log.js
 /session_records/*
 !/session_records/.gitkeep
 btc-replay-trades*.csv

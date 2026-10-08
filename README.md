@@ -80,9 +80,9 @@ timestamp,open,high,low,close,volume
 
 角色聊天可通过系统环境变量 `DEEPSEEK_API_KEY`，或项目根目录的 `.deepseek_api_key` / `deepseek_api_key.txt` 配置密钥。密钥文件和常见 Python 虚拟环境已列入 `.gitignore`。程序不会自动加载 `.env` 文件；不要把真实密钥写入示例配置、源码或提交记录。
 
-两个启动器仅监听 `127.0.0.1`，只提供页面、脚本、图片、行情数据及已公开的预测日志。密钥、环境配置、Git 元数据、服务器源码和目录列表不通过 HTTP 提供。新增页面资源若不在现有范围内，需要同步更新 `local_server.py` 的静态资源规则。
+两个启动器仅监听 `127.0.0.1`，只提供页面、脚本、图片和行情数据。预测日志、记录注入脚本、密钥、环境配置、Git 元数据、服务器源码和目录列表不通过 HTTP 提供。新增页面资源若不在现有范围内，需要同步更新 `local_server.py` 的静态资源规则。
 
-仓库保留现有的预测日志和记录注入脚本。新导出的交易 CSV、复盘 Markdown、图表截图及 `session_records/` 下的本地会话默认忽略；浏览器中的游戏进度、聊天和会话仍保存在本机 `localStorage`。
+练习记录仅在本地保留，不随仓库公开：`pred_log.json`、`pred_log.csv` 和根目录的 `inject_log.js` 已加入忽略规则。预测记录功能及 `live_view/pred_log_viewer.py` 查看器源码仍保留；查看器可读取自行导出的本地 JSON 并生成 CSV，未提供记录文件时会提示并退出。导出的交易 CSV、复盘 Markdown、图表截图及 `session_records/` 下的本地会话也默认忽略；浏览器中的游戏进度、聊天和会话仍保存在本机 `localStorage`。
 
 可运行以下命令检查两个启动器的静态文件访问限制，无需外网或真实 API 密钥：
 

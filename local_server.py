@@ -11,8 +11,6 @@ PUBLIC_FILES = {
     "index.html",
     "styles.css",
     "live_view/live.html",
-    "live_view/pred_log.csv",
-    "live_view/pred_log.json",
 }
 PUBLIC_DIRECTORIES = {
     ("src",): {".js"},

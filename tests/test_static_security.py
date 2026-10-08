@@ -53,8 +53,6 @@ class StaticSecurityChecks:
             "live_view/live.html": b"<html>live test page</html>",
             "live_view/data/BTCUSDT-15m.csv": b"timestamp,open\n2,200\n",
             "live_view/data/BTCUSDT-15m.bin": b"BTCR-live-binary",
-            "live_view/pred_log.csv": b"timestamp,result\n1,test\n",
-            "live_view/pred_log.json": b'[{"result":"test"}]',
         }
         for relative, content in self.assets.items():
             self.write_file(relative, content)
@@ -66,6 +64,7 @@ class StaticSecurityChecks:
             "data/secrets.json", "live_view/.env", "start_app.py",
             "README.md", "unknown.csv", "character/private.txt",
             "private/secret.js", "src/private-key.pem",
+            "inject_log.js", "live_view/pred_log.csv", "live_view/pred_log.json",
         ):
             self.write_file(relative, FAKE_SECRET)
         self.outside = Path(self.temp.name) / "outside-secret.js"
@@ -162,7 +161,9 @@ class StaticSecurityChecks:
             "/data/secrets.json", "/live_view/.env", "/start_app.py",
             "/README.md", "/unknown.csv", "/character/private.txt",
             "/private/secret.js", "/src/private-key.pem",
+            "/inject_log.js", "/live_view/pred_log.csv", "/live_view/pred_log.json",
         ):
+            self.assertTrue((self.root / path.lstrip("/")).is_file())
             self.assert_denied(path)
 
     def test_encoded_sensitive_paths_are_denied(self):
